@@ -6,8 +6,8 @@ create a `secrets.h` file in the `include/` directory:
 #ifndef SECRETS_H
 #define SECRETS_H
 
-const char* SECRET_SSID = "wifihome2";
-const char* SECRET_PASSWORD = "Wifi_2022";
+const char* SECRET_SSID = "SSID";
+const char* SECRET_PASSWORD = "PASS";
 #endif
 ```
 
