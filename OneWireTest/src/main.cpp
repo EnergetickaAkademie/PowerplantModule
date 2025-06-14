@@ -1,171 +1,70 @@
-#include <Arduino.h>
-#include <OneWire.h>
+/*
+ *    OneWire Slave Device - DS18B20 Temperature Sensor Emulation
+ *    Based on OneWireHub DS18B20_thermometer example
+ *
+ *    Tested with:
+ *    - https://github.com/PaulStoffregen/OneWire --> DS18x20-Example
+ *    - DS9490R-OneWire-Host as master device
+ */
 
-// Pin definitions
-#define ONEWIRE_PIN 2        // GPIO2 (D4 on D1 Mini) - OneWire bus pin
-#define LED_PIN LED_BUILTIN  // Built-in LED for status indication
+#include "DS18B20.h" // Digital Thermometer, 12bit
+#include "OneWireHub.h"
 
-// Configuration - Change these to set device mode and ID
-#define DEVICE_MODE_MASTER true  // Set to false for slave mode
-#define SLAVE_ID 1               // Only used in slave mode (1, 2, 3, etc.)
+constexpr uint8_t pin_led{LED_BUILTIN};
+constexpr uint8_t pin_onewire{6};  // GPIO5 (D1 on D1 Mini)
 
-// Protocol constants
-#define HEARTBEAT_COMMAND 0xAA
-#define HEARTBEAT_INTERVAL 3000  // 3 seconds between heartbeats
-#define MAX_SLAVES 5             // Maximum number of slaves to cycle through
+auto hub = OneWireHub(pin_onewire);
+auto ds18b20 = DS18B20(DS18B20::family_code, 0x00, 0x00, 0xB2, 0x18, 0xDA, 0x00); // DS18B20: 9-12bit, -55 - +85 degC
 
-// Global variables
-OneWire oneWire(ONEWIRE_PIN);
-unsigned long lastHeartbeat = 0;
-uint8_t currentSlaveId = 1;      // Current slave ID being addressed
+bool blinking(void);
 
-class OneWireHeartbeat {
-public:
-  // Master: Send heartbeat with specific slave ID
-  void sendHeartbeatToSlave(uint8_t slaveId) {
-    Serial.print("=== Sending Heartbeat to Slave ID: ");
-    Serial.print(slaveId);
-    Serial.println(" ===");
-    
-    // Reset and check for presence
-    if (!oneWire.reset()) {
-      Serial.println("No devices found on bus");
-      return;
-    }
-    
-    // Skip ROM command (address all devices)
-    oneWire.write(0xCC);
-    
-    // Send heartbeat command
-    oneWire.write(HEARTBEAT_COMMAND);
-    
-    // Send slave ID
-    oneWire.write(slaveId);
-    
-    Serial.print("Heartbeat sent with ID: ");
-    Serial.println(slaveId);
-    
-    // Blink LED to show master activity
-    digitalWrite(LED_PIN, HIGH);
-    delay(100);
-    digitalWrite(LED_PIN, LOW);
-  }
-  
-  // Slave: Listen for heartbeat and check if it's for this device
-  bool listenForHeartbeat(uint8_t mySlaveId) {
-    // Check if there's a reset pulse (start of communication)
-    if (oneWire.reset()) {
-      delay(1); // Small delay to ensure master completes setup
-      
-      // Try to read the command sequence
-      uint8_t command = oneWire.read();
-      
-      if (command == 0xCC) { // Skip ROM command received
-        uint8_t heartbeatCmd = oneWire.read();
-        
-        if (heartbeatCmd == HEARTBEAT_COMMAND) {
-          uint8_t receivedId = oneWire.read();
-          
-          Serial.print("Received heartbeat for ID: ");
-          Serial.print(receivedId);
-          Serial.print(" (My ID: ");
-          Serial.print(mySlaveId);
-          Serial.println(")");
-          
-          if (receivedId == mySlaveId) {
-            Serial.println("*** This heartbeat is for ME! ***");
-            return true;
-          } else {
-            Serial.println("Heartbeat for different slave, ignoring");
-          }
-        }
-      }
-    }
-    return false;
-  }
-  
-  // Blink LED the number of times equal to slave ID
-  void blinkForId(uint8_t slaveId) {
-    Serial.print("Blinking ");
-    Serial.print(slaveId);
-    Serial.println(" times for my ID");
-    
-    for (uint8_t i = 0; i < slaveId; i++) {
-      digitalWrite(LED_PIN, HIGH);
-      delay(300);
-      digitalWrite(LED_PIN, LOW);
-      delay(300);
-    }
-    
-    // Longer pause after blinking sequence
-    delay(1000);
-  }
-};
+void setup()
+{
+    Serial.begin(9600);
+    Serial.println("OneWire-Hub DS18B20 Temperature-Sensor");
+    Serial.flush();
 
-OneWireHeartbeat heartbeat;
+    pinMode(pin_led, OUTPUT);
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("\n=== OneWire ESP8266 Master-Slave Communication ===");
-  Serial.println("Using OneWire library for reliable communication");
-  
-  // Initialize LED
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  
-  if (DEVICE_MODE_MASTER) {
-    Serial.println("*** DEVICE CONFIGURED AS MASTER ***");
-    Serial.print("Will send heartbeats to slaves 1-");
-    Serial.println(MAX_SLAVES);
-    Serial.print("Heartbeat interval: ");
-    Serial.print(HEARTBEAT_INTERVAL);
-    Serial.println(" ms");
-    
-  } else {
-    Serial.println("*** DEVICE CONFIGURED AS SLAVE ***");
-    Serial.print("My Slave ID: ");
-    Serial.println(SLAVE_ID);
-    Serial.print("Will blink ");
-    Serial.print(SLAVE_ID);
-    Serial.println(" times when my ID is called");
-  }
-  
-  Serial.print("OneWire bus pin: GPIO");
-  Serial.println(ONEWIRE_PIN);
-  Serial.println("Waiting for communication...");
-  Serial.println();
+    // Setup OneWire
+    hub.attach(ds18b20);    // Set initial temperature
+    ds18b20.setTemperature(int8_t(21));
+
+    Serial.println("config done");
 }
 
-void loop() {
-  if (DEVICE_MODE_MASTER) {
-    // Master mode: Send heartbeat to each slave in sequence
-    unsigned long currentTime = millis();
-    
-    if (currentTime - lastHeartbeat >= HEARTBEAT_INTERVAL) {
-      // Send heartbeat to current slave ID
-      heartbeat.sendHeartbeatToSlave(currentSlaveId);
-      
-      // Move to next slave (cycle through 1 to MAX_SLAVES)
-      currentSlaveId++;
-      if (currentSlaveId > MAX_SLAVES) {
-        currentSlaveId = 1;
-        Serial.println("--- Completed full cycle, starting over ---");
-        Serial.println();
-      }
-      
-      lastHeartbeat = currentTime;
+void loop()
+{
+    // following function must be called periodically
+    hub.poll();
+    // this part is just for debugging (USE_SERIAL_DEBUG in OneWire.h must be enabled for output)
+    if (hub.hasError()) hub.printError();
+
+    // Blink triggers the state-change
+    if (blinking())
+    {
+        // Set temp
+        static float temperature = 20.0;
+        temperature += 0.1;
+        if (temperature > 30.0) temperature = 20.0;
+        ds18b20.setTemperature(temperature);
+        Serial.println(temperature);
     }
-    
-    delay(100);
-    
-  } else {
-    // Slave mode: Listen for heartbeat with my ID
-    if (heartbeat.listenForHeartbeat(SLAVE_ID)) {
-      // This heartbeat is for me! Blink my ID number of times
-      heartbeat.blinkForId(SLAVE_ID);
+}
+
+bool blinking(void)
+{
+    constexpr uint32_t interval   = 1000;     // interval at which to blink (milliseconds)
+    static uint32_t    nextMillis = millis(); // will store next time LED will updated
+
+    if (millis() > nextMillis)
+    {
+        nextMillis += interval;        // save the next time you blinked the LED
+        static uint8_t ledState = LOW; // ledState used to set the LED
+        if (ledState == LOW) ledState = HIGH;
+        else ledState = LOW;
+        digitalWrite(pin_led, ledState);
+        return 1;
     }
-    
-    delay(10); // Small delay for responsiveness
-  }
+    return 0;
 }
