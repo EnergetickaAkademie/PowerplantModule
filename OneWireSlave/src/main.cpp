@@ -40,7 +40,9 @@
 // PJON Configuration
 #define PJON_PIN D1
 #define SLAVE_ID 10  // Change this for each slave device (10, 11, 12, etc.)
+#define SLAVE_TYPE 1 // Define slave type (1 = temperature sensor, 2 = relay, etc.)
 #define MASTER_ID 1
+#define HEARTBEAT_INTERVAL 1000  // Send heartbeat every 1 second
 
 // PJON instance using SoftwareBitBang strategy
 PJON<SoftwareBitBang> bus(SLAVE_ID);
@@ -50,14 +52,12 @@ constexpr uint8_t pin_led{LED_BUILTIN};
 
 // Message types
 enum MessageType {
-    HELLO_REQUEST = 0x01,
-    HELLO_RESPONSE = 0x02,
     HEARTBEAT = 0x03
 };
 
 // Function declarations
 void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info);
-void sendHelloResponse(uint8_t receiver_id);
+void sendHeartbeat();
 bool blinking(void);
 
 void setup()
@@ -76,33 +76,35 @@ void setup()
 
     Serial.println("Ready");
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-      // Initialize PJON
+    Serial.println(WiFi.localIP());      // Initialize PJON
     bus.strategy.set_pin(PJON_PIN);
-    bus.set_receiver(receiver_function);
-      // Configure PJON for reliable communication
-    bus.set_acknowledge(true);           // Enable acknowledgments
+    bus.set_receiver(receiver_function);      // Configure PJON for reliable communication
+    bus.set_acknowledge(false);          // Disable acknowledgments
     bus.set_crc_32(true);               // Enable 32-bit CRC for better error detection
     bus.set_packet_auto_deletion(true); // Auto-delete delivered packets
     
-    // Set timing for better ESP8266 compatibility
-    bus.strategy.set_read_delay(4);      // Microseconds delay for bit reading
-    bus.strategy.set_bit_spacer(56);     // Microseconds between bits
-    
     bus.begin();
-    
-    Serial.print("PJON Slave initialized with ID: ");
+      Serial.print("PJON Slave initialized with ID: ");
     Serial.println(SLAVE_ID);
-    Serial.print("Listening on pin: ");
+    Serial.print("Slave Type: ");
+    Serial.println(SLAVE_TYPE);    Serial.print("Listening on pin: ");
     Serial.println(PJON_PIN);
-    Serial.println("ACK enabled, CRC-32 enabled");
+    Serial.println("ACK disabled, CRC-32 enabled");
+    Serial.print("Heartbeat interval: ");
+    Serial.print(HEARTBEAT_INTERVAL);
+    Serial.println("ms");
     
     WebSerial.print("PJON Slave ID: ");
     WebSerial.println(SLAVE_ID);
+    WebSerial.print("Type: ");
+    WebSerial.println(SLAVE_TYPE);
     WebSerial.print("Pin: ");
     WebSerial.println(PJON_PIN);
+    WebSerial.print("Heartbeat: ");
+    WebSerial.print(HEARTBEAT_INTERVAL);
+    WebSerial.println("ms");
     
-    Serial.println("Setup complete");
+    Serial.println("Setup complete - will send heartbeats to master");
 }
 
 void loop()
@@ -113,12 +115,20 @@ void loop()
     bus.update();
     bus.receive();
     
+    // Send heartbeat every second
+    static unsigned long lastHeartbeat = 0;
+    if (millis() - lastHeartbeat > HEARTBEAT_INTERVAL) {
+        sendHeartbeat();
+                WebSerial.println("Slave device alive and blinking");
+
+        lastHeartbeat = millis();
+    }
+    
     // Small delay for PJON timing stability
     delay(10);
     
     // Blink LED periodically 
     if (blinking()) {
-        WebSerial.println("Slave device alive and blinking");
         WebSerial.flush();
     }
 }
@@ -129,85 +139,35 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
     if (length < 1) return;
     
     uint8_t messageType = payload[0];
-      Serial.print("Received message from ID ");
+    
+    Serial.print("Received message from ID ");
     Serial.print(packet_info.tx.id);
     Serial.print(", type: 0x");
     Serial.println(messageType, HEX);
     
-    // Use flush to ensure WebSerial output is safe
     WebSerial.print("Message from ID ");
     WebSerial.print(packet_info.tx.id);
     WebSerial.print(", type: 0x");
     WebSerial.println(messageType, HEX);
     WebSerial.flush();
     
-    switch (messageType) {        case HELLO_REQUEST:
-            Serial.println("Hello request received");
-            WebSerial.println("Hello request received");
-            WebSerial.flush();
-            sendHelloResponse(packet_info.tx.id);
-            break;
-            
-        case HEARTBEAT:
-            Serial.println("Heartbeat received");
-            WebSerial.println("Heartbeat received");
-            WebSerial.flush();
-            // Blink LED to acknowledge heartbeat
-            digitalWrite(pin_led, HIGH);
-            delay(100);
-            digitalWrite(pin_led, LOW);
-            break;
-            
-        default:
-            Serial.print("Unknown message type: 0x");
-            Serial.println(messageType, HEX);
-            WebSerial.print("Unknown message type: 0x");
-            WebSerial.println(messageType, HEX);
-            WebSerial.flush();
-            break;
-    }
+    // Currently we only send heartbeats, no incoming message handling needed
+    Serial.print("Unknown/unsupported message type: 0x");
+    Serial.println(messageType, HEX);
 }
 
-void sendHelloResponse(uint8_t receiver_id)
+void sendHeartbeat()
 {
-    // Prepare hello response message
-    char helloMsg[] = "Hello World from Slave!";
-    size_t msgLen = strlen(helloMsg);
+    // Prepare heartbeat message: messageType + slaveId + slaveType
+    uint8_t heartbeat[3] = {HEARTBEAT, SLAVE_ID, SLAVE_TYPE};
     
-    // Calculate actual response size (message type + string length)
-    size_t responseSize = 1 + msgLen;
-    uint8_t response[responseSize];
+    // Send heartbeat without checking result (as requested)
+    bus.send(MASTER_ID, heartbeat, sizeof(heartbeat));
     
-    response[0] = HELLO_RESPONSE;
-    
-    // Copy hello message
-    memcpy(&response[1], helloMsg, msgLen);
-      // Send response with actual size (not fixed 25 bytes)
-    uint8_t result = bus.send(receiver_id, response, responseSize);
-    
-    if (result == PJON_ACK) {
-        Serial.println("Hello response sent successfully");
-        WebSerial.println("Hello response sent successfully");
-        WebSerial.flush();
-    } else {
-        Serial.print("Failed to send hello response, error code: ");
-        Serial.println(result, HEX);
-        WebSerial.print("Failed to send hello response, error code: 0x");
-        WebSerial.println(result, HEX);
-        
-        // Print common PJON error codes for debugging
-        if (result == PJON_FAIL) {
-            Serial.println("Error: PJON_FAIL - General failure");
-            WebSerial.println("Error: PJON_FAIL - General failure");
-        } else if (result == PJON_BUSY) {
-            Serial.println("Error: PJON_BUSY - Bus is busy");
-            WebSerial.println("Error: PJON_BUSY - Bus is busy");
-        } else if (result == PJON_TX_FAIL) {
-            Serial.println("Error: PJON_TX_FAIL - Transmission failed");
-            WebSerial.println("Error: PJON_TX_FAIL - Transmission failed");
-        }
-        WebSerial.flush();
-    }
+    Serial.print("Heartbeat sent - ID:");
+    Serial.print(SLAVE_ID);
+    Serial.print(", Type:");
+    Serial.println(SLAVE_TYPE);
 }
 
 bool blinking(void)

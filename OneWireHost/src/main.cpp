@@ -3,34 +3,48 @@
 #include <PJONSoftwareBitBang.h>
 #include <ota.h>
 #include "secrets.h"
+#include <vector>
 
 // PJON Configuration
 #define PJON_PIN D1
 #define MASTER_ID 1
+#define HEARTBEAT_TIMEOUT_MS 3100  // 3.1 seconds timeout
 
 // PJON instance using SoftwareBitBang strategy
 PJON<SoftwareBitBang> bus(MASTER_ID);
 
-// Slave device IDs to poll
-uint8_t slave_ids[] = {10}; // Add more slave IDs as needed
-uint8_t num_slaves = sizeof(slave_ids) / sizeof(slave_ids[0]);
-uint8_t current_slave_index = 0;
+// Slave tracking structure
+struct SlaveInfo {
+    uint8_t id;
+    uint8_t type;
+    unsigned long lastHeartbeat;
+    
+    // Constructor for easy initialization
+    SlaveInfo(uint8_t _id, uint8_t _type) : id(_id), type(_type), lastHeartbeat(millis()) {}
+};
+
+// Dynamic slave management using vector
+std::vector<SlaveInfo> slaves;
 
 // Message types
 enum MessageType {
-    HELLO_REQUEST = 0x01,
-    HELLO_RESPONSE = 0x02,
     HEARTBEAT = 0x03
 };
 
 // Function declarations
 void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info);
-void sendHelloRequest();
-void sendHeartbeat();
+void addOrUpdateSlave(uint8_t id, uint8_t type);
+void checkSlaveTimeouts();
+void printSlaveList();
+std::vector<SlaveInfo>::iterator findSlave(uint8_t id);
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("PJON Hello World Master");
+  Serial.println("PJON Slave Discovery Master");
+  
+  // Initialize slave vector (empty by default)
+  slaves.clear();
+  slaves.reserve(20); // Reserve space for 20 slaves to avoid frequent reallocations
   
   // Connect to WiFi and setup OTA
   connectWifi(SECRET_SSID, SECRET_PASSWORD);
@@ -46,19 +60,24 @@ void setup() {
   // Initialize PJON
   bus.strategy.set_pin(PJON_PIN);
   bus.set_receiver(receiver_function);
+  bus.set_acknowledge(false);          // Disable acknowledgments
+  bus.set_crc_32(true);               // Enable 32-bit CRC for better error detection
+  bus.set_packet_auto_deletion(true); // Auto-delete delivered packets
   bus.begin();
   
   Serial.print("PJON Master initialized with ID: ");
   Serial.println(MASTER_ID);
   Serial.print("Communication pin: ");
   Serial.println(PJON_PIN);
+  Serial.println("ACK disabled, CRC-32 enabled");
   
   WebSerial.print("PJON Master ID: ");
   WebSerial.println(MASTER_ID);
   WebSerial.print("Pin: ");
   WebSerial.println(PJON_PIN);
+  WebSerial.println("Slave discovery system ready - ACK disabled");
   
-  Serial.println("Setup complete");
+  Serial.println("Setup complete - waiting for slave heartbeats");
 }
 
 void loop() {
@@ -69,22 +88,21 @@ void loop() {
   bus.update();
   bus.receive();
   
-  // Send hello request every 5 seconds
-  static unsigned long lastHello = 0;
-  if (millis() - lastHello > 5000) {
-    sendHelloRequest();
-    lastHello = millis();
+  // Check for slave timeouts every 100ms
+  static unsigned long lastTimeoutCheck = 0;
+  if (millis() - lastTimeoutCheck > 100) {
+    checkSlaveTimeouts();
+    lastTimeoutCheck = millis();
   }
   
-  // Send heartbeat every 10 seconds
-  static unsigned long lastHeartbeat = 0;
-  if (millis() - lastHeartbeat > 10000) {
-    sendHeartbeat();
-    lastHeartbeat = millis();
+  // Print slave list every second
+  static unsigned long lastListPrint = 0;
+  if (millis() - lastListPrint > 10000) {
+    printSlaveList();
+    lastListPrint = millis();
   }
   
   // Small delay to prevent excessive CPU usage
-  delay(1);
 }
 
 // PJON message receiver function
@@ -98,28 +116,21 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
     Serial.print(packet_info.tx.id);
     Serial.print(", type: 0x");
     Serial.println(messageType, HEX);
+
+    WebSerial.print("Received message from slave ID ");
+    WebSerial.print(packet_info.tx.id);
+    WebSerial.print(", type: 0x");
+    WebSerial.println(messageType, HEX);
+    WebSerial.flush();
     
     switch (messageType) {
-        case HELLO_RESPONSE:
-            if (length > 1) {
-                // Create properly sized buffer with null termination
-                size_t msgLen = length - 1;  // Subtract 1 for message type byte
-                char message[msgLen + 1];    // +1 for null terminator
+        case HEARTBEAT:
+            if (length >= 3) { // messageType + id + type
+                uint8_t slaveId = payload[1];
+                uint8_t slaveType = payload[2];
                 
-                // Copy message and ensure null termination
-                memcpy(message, &payload[1], msgLen);
-                message[msgLen] = '\0';      // Explicit null termination
-                
-                Serial.print("Hello response from slave ");
-                Serial.print(packet_info.tx.id);
-                Serial.print(": ");
-                Serial.println(message);
-                
-                WebSerial.print("Slave ");
-                WebSerial.print(packet_info.tx.id);
-                WebSerial.print(": ");
-                WebSerial.println(message);
-                WebSerial.flush();
+                // Use the actual sender ID from packet info, not payload
+                addOrUpdateSlave(packet_info.tx.id, slaveType);
             }
             break;
             
@@ -130,49 +141,80 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
     }
 }
 
-void sendHelloRequest()
-{
-    if (num_slaves == 0) return;
-    
-    uint8_t slave_id = slave_ids[current_slave_index];
-    
-    // Send hello request
-    uint8_t request[1] = {HELLO_REQUEST};
-    uint8_t result = bus.send(slave_id, request, sizeof(request));
-    
-    if (result == PJON_ACK) {
-        Serial.print("Hello request sent to slave ");
-        Serial.println(slave_id);
-        WebSerial.print("Hello request sent to slave ");
-        WebSerial.println(slave_id);
-        WebSerial.flush();
-    } else {
-        Serial.print("Failed to send hello request to slave ");
-        Serial.println(slave_id);
-        WebSerial.print("Failed to reach slave ");
-        WebSerial.println(slave_id);
-        WebSerial.flush();
+// Slave management functions
+std::vector<SlaveInfo>::iterator findSlave(uint8_t id) {
+    for (auto it = slaves.begin(); it != slaves.end(); ++it) {
+        if (it->id == id) {
+            return it;
+        }
     }
-    
-    // Move to next slave
-    current_slave_index = (current_slave_index + 1) % num_slaves;
+    return slaves.end(); // Not found
 }
 
-void sendHeartbeat()
-{
-    uint8_t heartbeat[1] = {HEARTBEAT};
+void addOrUpdateSlave(uint8_t id, uint8_t type) {
+    auto it = findSlave(id);
     
-    // Send heartbeat to all slaves
-    for (int i = 0; i < num_slaves; i++) {
-        uint8_t result = bus.send(slave_ids[i], heartbeat, sizeof(heartbeat));
+    if (it != slaves.end()) {
+        // Update existing slave
+        it->lastHeartbeat = millis();
+        it->type = type;
+        // Don't print anything for updates - too verbose
+    } else {
+        // Add new slave
+        slaves.emplace_back(id, type);
         
-        if (result == PJON_ACK) {
-            Serial.print("Heartbeat sent to slave ");
-            Serial.println(slave_ids[i]);
-        } else {
-            Serial.print("Heartbeat failed for slave ");
-            Serial.println(slave_ids[i]);
-        }
-        delay(10); // Small delay between heartbeats to prevent bus flooding
+        Serial.print("New slave connected - ID ");
+        Serial.print(id);
+        Serial.print(", type ");
+        Serial.println(type);
+        
+        WebSerial.print("New slave connected - ID ");
+        WebSerial.print(id);
+        WebSerial.print(", type ");
+        WebSerial.println(type);
+        WebSerial.flush();
     }
+}
+
+void checkSlaveTimeouts() {
+    unsigned long currentTime = millis();
+    
+    // Use reverse iterator to safely remove elements while iterating
+    for (auto it = slaves.begin(); it != slaves.end();) {
+        if (currentTime - it->lastHeartbeat > HEARTBEAT_TIMEOUT_MS) {
+            Serial.print("Slave ID ");
+            Serial.print(it->id);
+            Serial.println(" timed out - removing from list");
+            
+            WebSerial.print("Slave ID ");
+            WebSerial.print(it->id);
+            WebSerial.println(" disconnected (timeout)");
+            WebSerial.flush();
+            
+            // Remove slave from vector
+            it = slaves.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void printSlaveList() {
+    WebSerial.print("Active slaves (");
+    WebSerial.print(slaves.size());
+    WebSerial.println("): ");
+    
+    if (slaves.empty()) {
+        WebSerial.println("None");
+    } else {
+        for (const auto& slave : slaves) {
+            WebSerial.print("ID:");
+            WebSerial.print(slave.id);
+            WebSerial.print(",Type:");
+            WebSerial.print(slave.type);
+            WebSerial.print(" ");
+        }
+        WebSerial.println();
+    }
+    WebSerial.flush();
 }
