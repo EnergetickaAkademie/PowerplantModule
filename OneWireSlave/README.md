@@ -1,299 +1,130 @@
-# OneWire ESP8266 Master-Slave Communication
+# PJON ESP8266 Temperature Sensor Slave
 
-A simple and reliable OneWire communication system for ESP8266 devices using the proven OneWire library. The master sends heartbeats with device IDs, and slaves respond by blinking their LED a number of times equal to their assigned ID.
+A reliable temperature sensor slave using the PJON protocol for robust communication with master devices. PJON provides better error handling, timing tolerance, and collision detection compared to OneWire.
 
 ## 🎯 **Core Functionality**
 
-- **Master**: Cycles through slave IDs (1-5), sending heartbeats every 3 seconds
-- **Slaves**: Listen for their specific ID and blink LED accordingly
-  - Slave ID 1 → Blinks 1 time
-  - Slave ID 2 → Blinks 2 times  
-  - Slave ID 3 → Blinks 3 times
-  - And so on...
+- **Temperature Simulation**: Oscillates between 20°C and 25°C
+- **PJON Slave**: Responds to temperature requests from master
+- **Heartbeat Response**: Acknowledges master heartbeat signals
+- **WebSerial Debug**: Remote monitoring via web interface
+- **OTA Updates**: Wireless firmware updates
 
 ## 🚀 **Quick Start**
 
 ### 1. Hardware Setup
-- Connect all ESP8266 devices to the same OneWire bus (GPIO2)
-- Add one 4.7kΩ pull-up resistor between bus and 3.3V
+- Connect ESP8266 GPIO2 (D1) to PJON communication bus
+- Add 4.7kΩ pull-up resistor between bus and 3.3V (one per bus)
 - Connect common ground between all devices
 
-### 2. Software Configuration
-
-**Master Device:**
+### 2. Configuration
+Edit `src/main.cpp` to set unique slave ID:
 ```cpp
-#define DEVICE_MODE_MASTER true
-#define SLAVE_ID 1               // Not used for master
-```
-
-**Slave Device (ID 2):**
-```cpp
-#define DEVICE_MODE_MASTER false
-#define SLAVE_ID 2               // This device blinks 2 times
+#define SLAVE_ID 10  // Change for each slave: 10, 11, 12, etc.
 ```
 
 ### 3. Upload and Test
-1. Flash one ESP8266 as master
-2. Flash other ESP8266s as slaves with unique IDs
-3. Connect to OneWire bus and power on
-4. Watch slaves blink when their ID is called!
-
-## 📋 **Dependencies**
-
-The project automatically installs:
-- **OneWire** by Paul Stoffregen (v2.3.7) - Handles all low-level OneWire communication
-
-## 🔧 **Detailed Setup**
-
-See `SETUP_GUIDE.md` for complete step-by-step instructions including:
-- Wiring diagrams
-- Device configuration examples  
-- Expected serial monitor output
-- Troubleshooting guide
-
-## Hardware Setup
-
-### Pin Configuration
-- **OneWire Bus**: GPIO2 (D4 on D1 Mini)
-- **LED**: Built-in LED (GPIO2 on most ESP8266 boards)
-
-### Wiring
-1. Connect all devices to the same OneWire bus (GPIO2)
-2. Use a 4.7kΩ pull-up resistor between the OneWire bus and VCC
-3. Connect GND of all devices together
-4. Ensure proper power supply for all devices
-
-```
-Master Device    Slave Device 1    DS18B20 Sensor
-     |                 |                 |
-     +-------[4.7kΩ]---+                 |
-     |                 |                 |
-   GPIO2             GPIO2             DQ
-     |                 |                 |
-     +-----------------+-----------------+  (OneWire Bus)
-     |                 |                 |
-    GND               GND               GND
-     |                 |                 |
-     +-----------------+-----------------+  (Common Ground)
+```bash
+pio run -e d1_mini --target upload
+pio device monitor
 ```
 
-## Software Configuration
+## 📋 **PJON Protocol**
 
-### Setting Device Mode
+### Supported Messages
+- **Temperature Request**: Master requests current temperature
+- **Heartbeat**: Master sends keepalive signal
+- **Status Request**: Master checks device status
 
-In `src/main.cpp`, change the following line to configure the device:
+### Response Format
+Temperature responses include:
+- Message type identifier
+- 4-byte float temperature value
+- Slave ID for identification
 
-```cpp
-#define DEVICE_MODE_MASTER true   // For master device
-#define DEVICE_MODE_MASTER false  // For slave device (simplified implementation)
+## 🔧 **Hardware Requirements**
+
+- **MCU**: ESP8266 (D1 Mini recommended)
+- **Communication**: Single wire + ground (GPIO2/D1)
+- **Pull-up**: 4.7kΩ resistor (shared across bus)
+- **Power**: 3.3V stable supply
+
+## 🌐 **Remote Access**
+
+### WebSerial Interface
+- **URL**: `http://PjonSlave.local/webserial`
+- **Features**: Real-time monitoring, command interface
+- **Data**: Temperature updates, message logs, error reports
+
+### OTA Updates
+- **Initial**: USB upload required
+- **Subsequent**: Wireless via `pio run -e d1_mini_ota --target upload`
+- **Hostname**: `PjonSlave.local`
+
+## 📊 **Expected Output**
+
+```
+PJON Temperature Sensor Slave
+PJON Slave initialized with ID: 10
+Listening on pin: 5
+
+Received message from ID 1, type: 1
+Temperature request received
+Temperature response sent successfully
+
+Current temperature: 23.2°C
+
+Received message from ID 1, type: 3
+Heartbeat received
 ```
 
-### Library Installation
+## 🛠️ **vs OneWire Advantages**
 
-The `platformio.ini` file automatically includes the OneWire library:
+| Feature | OneWire | PJON |
+|---------|---------|------|
+| **Error Handling** | Basic CRC | ACK/NAK + Retry |
+| **Timing** | Very strict | Flexible tolerance |
+| **Collisions** | Not handled | Automatic detection |
+| **Multi-Master** | No | Yes |
+| **Reliability** | Good | Excellent |
 
-```ini
-[env:d1_mini]
-platform = espressif8266
-board = d1_mini
-framework = arduino
-lib_deps = 
-    paulstoffregen/OneWire@^2.3.7
-```
-
-## Protocol Details
-
-### OneWire Library Advantages
-- **Proven Timing**: Handles all critical OneWire timing automatically
-- **CRC Checking**: Built-in CRC8 calculation and verification
-- **Device Search**: Robust device enumeration and addressing
-- **Cross-Platform**: Works on multiple Arduino-compatible platforms
-- **Well-Tested**: Used in thousands of projects worldwide
-
-### Custom Protocol Commands
-- **0xAA (HEARTBEAT_COMMAND)**: Master heartbeat signal
-- **0xBB (TEMP_REQUEST_COMMAND)**: Temperature request (for DS18B20 examples)
-
-### Device ROM Structure
-Each device has a unique 8-byte ROM address:
-- **Byte 0**: Family code (0x28 for our custom devices)
-- **Bytes 1-6**: Unique serial number (based on ESP chip ID)
-- **Byte 7**: CRC8 checksum
-
-## Operation
-
-### Master Device
-1. Automatically searches for devices on startup
-2. Sends heartbeat signals every 2 seconds using `oneWire.reset()` and `oneWire.write()`
-3. Uses Skip ROM command (0xCC) to address all devices simultaneously
-4. Periodically re-scans for new devices (every 10 seconds)
-5. Provides detailed serial output about discovered devices
-
-### Slave Device (Simplified)
-1. **Note**: True OneWire slave implementation requires dedicated hardware
-2. This implementation provides a simplified demonstration
-3. Monitors the bus for reset pulses and attempts to read commands
-4. Blinks LED when heartbeat is detected
-5. For production use, consider using dedicated OneWire slave controllers
-
-## LED Patterns
-
-### Master
-- **Single quick blink**: Heartbeat sent successfully
-- **No blink**: No devices found on bus
-
-### Slave (Simplified)
-- **Three quick blinks**: Heartbeat received from master
-- **No blink**: No communication detected
-
-## Serial Monitor Output
-
-Enable Serial monitoring at 115200 baud to see:
-- Device initialization and library version
-- Automatic device discovery with ROM addresses
-- CRC verification results
-- Heartbeat transmission confirmations
-- Real-time bus activity monitoring
-
-Example output:
-```
-=== OneWire Heartbeat Protocol ===
-Using OneWire library v2.3.7
-Device ROM: 28 AB CD EF 12 34 56 78
-
-=== Searching for devices ===
-Device #1 ROM: 28 12 34 56 78 9A BC DE (CRC OK)
-Found 1 devices
-
-=== Sending Heartbeat ===
-Heartbeat sent to all devices
-```
-
-## Examples
-
-### Basic Heartbeat
-The main implementation in `src/main.cpp` provides basic master-slave heartbeat functionality.
-
-### DS18B20 Temperature Sensors
-See `examples/with_ds18b20_example.cpp` for an advanced example that:
-- Combines heartbeat with real OneWire temperature sensors
-- Demonstrates device enumeration and addressing
-- Shows temperature reading alongside custom commands
-- Provides a practical test setup with real OneWire slaves
-
-### Different Configurations
-See `examples/configurations.cpp` for various setup examples including:
-- Fast heartbeat configurations
-- Custom pin assignments
-- Multiple bus configurations
-
-## Building and Uploading
-
-1. Open the project in PlatformIO
-2. The OneWire library will be automatically downloaded and installed
-3. Configure device mode in `main.cpp`
-4. Build the project: `pio run`
-5. Upload to device: `pio run --target upload`
-6. Monitor serial output: `pio device monitor`
-
-## Testing with Real OneWire Devices
-
-### Using DS18B20 Temperature Sensors
-1. Connect DS18B20 sensors to the OneWire bus
-2. Add DallasTemperature library to `platformio.ini`:
-   ```ini
-   lib_deps = 
-       paulstoffregen/OneWire@^2.3.7
-       milesburton/DallasTemperature@^3.11.0
-   ```
-3. Use the example in `examples/with_ds18b20_example.cpp`
-4. Observe both heartbeat and temperature readings
-
-### Device Search Output
-The master will automatically discover and list all OneWire devices:
-```
-=== Searching for devices ===
-Device #1 ROM: 28 FF 12 34 56 78 9A BC (CRC OK)  // DS18B20 sensor
-Device #2 ROM: 28 AA BB CC DD EE FF 11 (CRC OK)  // Custom device
-Found 2 devices
-```
-
-## Troubleshooting
-
-### Library Issues
-- Ensure PlatformIO has internet access to download libraries
-- Check `platformio.ini` syntax for library dependencies
-- Use `pio lib list` to verify installed libraries
+## 🔧 **Troubleshooting**
 
 ### No Communication
-- Verify OneWire library is properly installed
-- Check wiring connections and pull-up resistor
-- Monitor serial output for device discovery results
-- Test with known OneWire devices (like DS18B20)
+1. Check GPIO2 (D1) connections
+2. Verify pull-up resistor is present
+3. Ensure unique slave IDs
+4. Check power supply stability
 
-### CRC Errors
-- Check for electrical noise or interference
-- Verify power supply stability
-- Ensure proper grounding
-- Check cable length (keep under 100m)
+### WebSerial Issues
+1. Verify WiFi connection
+2. Try IP address if `.local` fails
+3. Check firewall settings
 
-## Advantages of Library-Based Approach
+## 📚 **Development**
 
-### Reliability
-- **Proven Code**: OneWire library has been tested in millions of deployments
-- **Precise Timing**: Hardware-optimized timing routines
-- **Error Handling**: Built-in error detection and recovery
+### Adding Custom Commands
+Extend the message handler in `receiver_function()`:
 
-### Compatibility
-- **Standard Compliance**: Follows Maxim OneWire specifications exactly
-- **Device Support**: Works with all standard OneWire devices
-- **Platform Support**: Compatible with ESP8266, ESP32, Arduino, etc.
-
-### Maintainability
-- **Less Code**: Eliminates need for low-level timing implementation
-- **Bug-Free**: Avoids common timing and electrical issues
-- **Updates**: Benefits from library updates and improvements
-
-## Extending the Protocol
-
-### Adding New Commands
 ```cpp
-#define CUSTOM_COMMAND 0xDD
-// Send custom command
-oneWire.reset();
-oneWire.write(0xCC);  // Skip ROM
-oneWire.write(CUSTOM_COMMAND);
+case CUSTOM_COMMAND:
+    // Handle custom command
+    break;
 ```
 
-### Device-Specific Communication
+### Changing Update Rate
+Modify the blinking interval:
+
 ```cpp
-// Address specific device
-uint8_t deviceAddr[8] = {0x28, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE};
-oneWire.reset();
-oneWire.select(deviceAddr);
-oneWire.write(HEARTBEAT_COMMAND);
+constexpr uint32_t interval = 2000; // milliseconds
 ```
 
-### Reading Device Data
-```cpp
-// Read response from device
-oneWire.reset();
-oneWire.write(0xCC);  // Skip ROM
-oneWire.write(READ_COMMAND);
-uint8_t response = oneWire.read();
-```
+## 📖 **Related Documentation**
 
-## Performance Notes
+- `../PJON_SETUP_GUIDE.md` - Complete setup guide
+- `WEBSERIAL_GUIDE.md` - WebSerial usage
+- `OTA_SETUP.md` - Over-the-air updates
 
-- **Timing Accuracy**: OneWire library provides microsecond-accurate timing
-- **Device Limit**: Supports up to 100+ devices per bus (hardware dependent)
-- **Speed**: Standard OneWire speed (~16.3 kbps) and overdrive speed (~142 kbps)
-- **Reliability**: Built-in collision detection and error recovery
+---
 
-## Compatibility
-
-- **Platform**: ESP8266, ESP32, Arduino Uno/Nano/Mega, etc.
-- **Framework**: Arduino
-- **IDE**: PlatformIO, Arduino IDE
-- **Library**: OneWire v2.3.7+ by Paul Stoffregen
-- **Devices**: Compatible with all standard OneWire devices
+**Ready to deploy!** This slave device provides reliable temperature data via the robust PJON protocol.

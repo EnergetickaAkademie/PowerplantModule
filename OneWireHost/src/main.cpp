@@ -1,83 +1,178 @@
+#define PJON_INCLUDE_SWBB // Include SoftwareBitBang strategy
 #include <Arduino.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
+#include <PJONSoftwareBitBang.h>
 #include <ota.h>
 #include "secrets.h"
 
-// OneWire setup on pin D1
-#define ONE_WIRE_BUS D1
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
+// PJON Configuration
+#define PJON_PIN D1
+#define MASTER_ID 1
 
-// put function declarations here:
-void readTemperature();
+// PJON instance using SoftwareBitBang strategy
+PJON<SoftwareBitBang> bus(MASTER_ID);
+
+// Slave device IDs to poll
+uint8_t slave_ids[] = {10}; // Add more slave IDs as needed
+uint8_t num_slaves = sizeof(slave_ids) / sizeof(slave_ids[0]);
+uint8_t current_slave_index = 0;
+
+// Message types
+enum MessageType {
+    HELLO_REQUEST = 0x01,
+    HELLO_RESPONSE = 0x02,
+    HEARTBEAT = 0x03
+};
+
+// Function declarations
+void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info);
+void sendHelloRequest();
+void sendHeartbeat();
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("OneWireHost Booting");
-  
-  // Initialize DS18B20 sensor
-  sensors.begin();
-  
-  // Get number of devices on the bus
-  int deviceCount = sensors.getDeviceCount();
-  Serial.print("Found ");
-  Serial.print(deviceCount);
-  Serial.println(" DS18B20 devices on the bus");
+  Serial.println("PJON Hello World Master");
   
   // Connect to WiFi and setup OTA
   connectWifi(SECRET_SSID, SECRET_PASSWORD);
-  setupOTA(-1, "OneWireHost");
+  setupOTA(-1, "PjonMaster");
   
   // Setup WebSerial debugging
-  setupWebSerial("OneWireHost");
+  setupWebSerial("PjonMaster");
   
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  // put your setup code here, to run once:
+  // Initialize PJON
+  bus.strategy.set_pin(PJON_PIN);
+  bus.set_receiver(receiver_function);
+  bus.begin();
+  
+  Serial.print("PJON Master initialized with ID: ");
+  Serial.println(MASTER_ID);
+  Serial.print("Communication pin: ");
+  Serial.println(PJON_PIN);
+  
+  WebSerial.print("PJON Master ID: ");
+  WebSerial.println(MASTER_ID);
+  WebSerial.print("Pin: ");
+  WebSerial.println(PJON_PIN);
+  
+  Serial.println("Setup complete");
 }
 
 void loop() {
   // Handle OTA updates
   handleOTA();
   
-  // Read temperature every 5 seconds
-  static unsigned long lastReading = 0;
-  if (millis() - lastReading > 1000) {
-    readTemperature();
-    lastReading = millis();
+  // Update PJON (handle incoming messages)
+  bus.update();
+  bus.receive();
+  
+  // Send hello request every 5 seconds
+  static unsigned long lastHello = 0;
+  if (millis() - lastHello > 5000) {
+    sendHelloRequest();
+    lastHello = millis();
   }
   
-  // put your main code here, to run repeatedly:
+  // Send heartbeat every 10 seconds
+  static unsigned long lastHeartbeat = 0;
+  if (millis() - lastHeartbeat > 10000) {
+    sendHeartbeat();
+    lastHeartbeat = millis();
+  }
+  
+  // Small delay to prevent excessive CPU usage
+  delay(1);
 }
 
-void readTemperature() {
-  // Request temperature from all devices on the bus
-  if(sensors.getDeviceCount() == 0) {
-    Serial.println("No DS18B20 devices found on the bus");
-    WebSerial.println("No DS18B20 devices found on the bus");
-    return;
-  }
-  sensors.requestTemperatures();
-  
-  // Get temperature for device index 0 (first device)
-  float temperatureC = sensors.getTempCByIndex(0);
-  
-  // Check if reading was successful
-  if (temperatureC != DEVICE_DISCONNECTED_C) {
-    String tempMsg = "Temperature: " + String(temperatureC) + "°C";
-    Serial.println(tempMsg);
-    WebSerial.println(tempMsg);
+// PJON message receiver function
+void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info)
+{
+    if (length < 1) return;
     
-    // Convert to Fahrenheit if needed
-    float temperatureF = sensors.toFahrenheit(temperatureC);
-    String tempMsgF = "Temperature: " + String(temperatureF) + "°F";
-    Serial.println(tempMsgF);
-    WebSerial.println(tempMsgF);
-  } else {
-    Serial.println("Error: Could not read temperature data");
-    WebSerial.println("Error: Could not read temperature data");
-  }
+    uint8_t messageType = payload[0];
+    
+    Serial.print("Received message from slave ID ");
+    Serial.print(packet_info.tx.id);
+    Serial.print(", type: 0x");
+    Serial.println(messageType, HEX);
+    
+    switch (messageType) {
+        case HELLO_RESPONSE:
+            if (length > 1) {
+                // Create properly sized buffer with null termination
+                size_t msgLen = length - 1;  // Subtract 1 for message type byte
+                char message[msgLen + 1];    // +1 for null terminator
+                
+                // Copy message and ensure null termination
+                memcpy(message, &payload[1], msgLen);
+                message[msgLen] = '\0';      // Explicit null termination
+                
+                Serial.print("Hello response from slave ");
+                Serial.print(packet_info.tx.id);
+                Serial.print(": ");
+                Serial.println(message);
+                
+                WebSerial.print("Slave ");
+                WebSerial.print(packet_info.tx.id);
+                WebSerial.print(": ");
+                WebSerial.println(message);
+                WebSerial.flush();
+            }
+            break;
+            
+        default:
+            Serial.print("Unknown message type: 0x");
+            Serial.println(messageType, HEX);
+            break;
+    }
+}
+
+void sendHelloRequest()
+{
+    if (num_slaves == 0) return;
+    
+    uint8_t slave_id = slave_ids[current_slave_index];
+    
+    // Send hello request
+    uint8_t request[1] = {HELLO_REQUEST};
+    uint8_t result = bus.send(slave_id, request, sizeof(request));
+    
+    if (result == PJON_ACK) {
+        Serial.print("Hello request sent to slave ");
+        Serial.println(slave_id);
+        WebSerial.print("Hello request sent to slave ");
+        WebSerial.println(slave_id);
+        WebSerial.flush();
+    } else {
+        Serial.print("Failed to send hello request to slave ");
+        Serial.println(slave_id);
+        WebSerial.print("Failed to reach slave ");
+        WebSerial.println(slave_id);
+        WebSerial.flush();
+    }
+    
+    // Move to next slave
+    current_slave_index = (current_slave_index + 1) % num_slaves;
+}
+
+void sendHeartbeat()
+{
+    uint8_t heartbeat[1] = {HEARTBEAT};
+    
+    // Send heartbeat to all slaves
+    for (int i = 0; i < num_slaves; i++) {
+        uint8_t result = bus.send(slave_ids[i], heartbeat, sizeof(heartbeat));
+        
+        if (result == PJON_ACK) {
+            Serial.print("Heartbeat sent to slave ");
+            Serial.println(slave_ids[i]);
+        } else {
+            Serial.print("Heartbeat failed for slave ");
+            Serial.println(slave_ids[i]);
+        }
+        delay(10); // Small delay between heartbeats to prevent bus flooding
+    }
 }
