@@ -1,0 +1,3 @@
+[submodule "OneWireSlave/lib/ota"]
+	path = OneWireSlave/lib/ota
+	url = https://github.com/EnergetickaAkademie/ota.git
