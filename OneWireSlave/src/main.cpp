@@ -39,8 +39,20 @@
 
 // PJON Configuration
 #define PJON_PIN D1
-#define SLAVE_ID 10  // Change this for each slave device (10, 11, 12, etc.)
-#define SLAVE_TYPE 1 // Define slave type (1 = temperature sensor, 2 = relay, etc.)
+
+// Configuration from build flags (set in platformio.ini)
+#ifndef SLAVE_ID
+#define SLAVE_ID 10  // Default fallback
+#endif
+
+#ifndef SLAVE_TYPE
+#define SLAVE_TYPE 1 // Default fallback
+#endif
+
+#ifndef DEVICE_NAME
+#define DEVICE_NAME "PjonSlave"  // Default fallback
+#endif
+
 #define MASTER_ID 1
 #define HEARTBEAT_INTERVAL 1000  // Send heartbeat every 1 second
 
@@ -68,11 +80,10 @@ void setup()
     Serial.println("Booting");
     
     pinMode(pin_led, OUTPUT);
-    
-    // Connect to WiFi and setup OTA
+      // Connect to WiFi and setup OTA
     connectWifi(SECRET_SSID, SECRET_PASSWORD);
-    setupOTA(-1, "PjonSlave");
-    setupWebSerial("PjonSlave");
+    setupOTA(-1, DEVICE_NAME);
+    setupWebSerial(DEVICE_NAME);
 
     Serial.println("Ready");
     Serial.print("IP address: ");
