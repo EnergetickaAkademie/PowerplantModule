@@ -97,7 +97,7 @@ void loop() {
   
   // Print slave list every second
   static unsigned long lastListPrint = 0;
-  if (millis() - lastListPrint > 10000) {
+  if (millis() - lastListPrint > 1000) {
     printSlaveList();
     lastListPrint = millis();
   }
@@ -112,7 +112,7 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
     
     uint8_t messageType = payload[0];
     
-    Serial.print("Received message from slave ID ");
+    /*Serial.print("Received message from slave ID ");
     Serial.print(packet_info.tx.id);
     Serial.print(", type: 0x");
     Serial.println(messageType, HEX);
@@ -121,7 +121,7 @@ void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info
     WebSerial.print(packet_info.tx.id);
     WebSerial.print(", type: 0x");
     WebSerial.println(messageType, HEX);
-    WebSerial.flush();
+    WebSerial.flush();*/
     
     switch (messageType) {
         case HEARTBEAT:
@@ -208,13 +208,8 @@ void printSlaveList() {
         WebSerial.println("None");
     } else {
         for (const auto& slave : slaves) {
-            WebSerial.print("ID:");
-            WebSerial.print(slave.id);
-            WebSerial.print(",Type:");
-            WebSerial.print(slave.type);
-            WebSerial.print(" ");
+            WebSerial.printf("ID: %d, Type: %d\n", slave.id, slave.type);
         }
-        WebSerial.println();
     }
     WebSerial.flush();
 }
