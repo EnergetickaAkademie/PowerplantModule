@@ -1,44 +1,21 @@
 /*
  *    PJON Temperature Sensor Slave
- *    Responds to temperature requests from master via PJON protocol
+ *    Using Com-Prot Library for simplified communication
  *    More stable and reliable than OneWire communication
  *
- *    PJON Features:
+ *    Com-Prot Features:
+ *    - Automatic heartbeat management
+ *    - Command handler registration
  *    - Robust error handling and acknowledgments
  *    - Multi-master support
  *    - Better timing tolerance
  *    - Collision detection and retry logic
  */
 
-#define PJON_INCLUDE_SWBB // Include SoftwareBitBang strategy
-#include <PJONSoftwareBitBang.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include "secrets.h"
+#include <Arduino.h>
+#include <com-prot.h>
 #include <ota.h>
-#include <WebSerial.h>
-
-// PJON Error codes (in case not defined in library)
-#ifndef PJON_ACK
-#define PJON_ACK        6
-#endif
-#ifndef PJON_NAK
-#define PJON_NAK        21
-#endif
-#ifndef PJON_BUSY
-#define PJON_BUSY       666
-#endif
-#ifndef PJON_TX_FAIL
-#define PJON_TX_FAIL    65535
-#endif
-#ifndef PJON_FAIL
-#define PJON_FAIL       65535
-#endif
-
-// PJON Configuration
-#define PJON_PIN D1
+#include "secrets.h"
 
 // Configuration from build flags (set in platformio.ini)
 #ifndef SLAVE_ID
@@ -53,147 +30,137 @@
 #define DEVICE_NAME "PjonSlave"  // Default fallback
 #endif
 
-#define MASTER_ID 1
-#define HEARTBEAT_INTERVAL 1000  // Send heartbeat every 1 second
+// Create slave instance
+ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1); // Use build flags for ID and type
 
-// PJON instance using SoftwareBitBang strategy
-PJON<SoftwareBitBang> bus(SLAVE_ID);
-
-// LED
+// LED control
 constexpr uint8_t pin_led{LED_BUILTIN};
+bool ledBlinking = false;
+unsigned long blinkStartTime = 0;
 
-// Message types
-enum MessageType {
-    HEARTBEAT = 0x03
-};
+// Command handlers
+void handleLedCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
+    if (length > 0) {
+        bool ledState = data[0];
+        digitalWrite(pin_led, ledState ? LOW : HIGH); // LED is inverted on ESP8266
+        
+        Serial.printf("LED turned %s by master %d\n", ledState ? "ON" : "OFF", senderId);
+        WebSerial.printf("LED command received: %s\n", ledState ? "ON" : "OFF");
+        WebSerial.flush();
+    }
+}
 
-// Function declarations
-void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info);
-void sendHeartbeat();
-bool blinking(void);
+void handleTemperatureRequest(uint8_t* data, uint16_t length, uint8_t senderId) {
+    // Simulate temperature reading
+    float temperature = 20.0 + (millis() % 10000) / 1000.0; // 20-30°C range
+    
+    Serial.printf("Temperature request from master %d, sending: %.2f°C\n", senderId, temperature);
+    
+    // Send response back to master
+    uint8_t response[4];
+    memcpy(response, &temperature, sizeof(temperature));
+    slave.sendResponse(0x21, response, sizeof(response)); // Response command type 0x21
+    
+    WebSerial.printf("Temperature sent: %.2f°C\n", temperature);
+    WebSerial.flush();
+}
+
+void handleCustomCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
+    Serial.printf("Custom command from master %d, data length: %d\n", senderId, length);
+    
+    if (length > 0) {
+        Serial.print("Data: ");
+        for (uint16_t i = 0; i < length; i++) {
+            Serial.printf("0x%02X ", data[i]);
+        }
+        Serial.println();
+        
+        // Start LED blinking for 5 seconds
+        ledBlinking = true;
+        blinkStartTime = millis();
+        
+        WebSerial.printf("Custom command received with %d bytes\n", length);
+        WebSerial.flush();
+    }
+}
+
+void blinkLed() {
+    static unsigned long lastBlink = 0;
+    static bool blinkState = false;
+    
+    if (ledBlinking) {
+        if (millis() - lastBlink > 200) {
+            blinkState = !blinkState;
+            digitalWrite(pin_led, blinkState ? LOW : HIGH); // LED is inverted
+            lastBlink = millis();
+        }
+        
+        // Stop blinking after 5 seconds
+        if (millis() - blinkStartTime > 5000) {
+            ledBlinking = false;
+            digitalWrite(pin_led, HIGH); // Turn off LED
+        }
+    }
+}
 
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("PJON Temperature Sensor Slave");
+    Serial.println("PJON Temperature Sensor Slave with Com-Prot");
     Serial.flush();
     Serial.println("Booting");
     
     pinMode(pin_led, OUTPUT);
-      // Connect to WiFi and setup OTA
+    digitalWrite(pin_led, HIGH); // Turn off LED initially (inverted)
+    
+    // Connect to WiFi and setup OTA
     connectWifi(SECRET_SSID, SECRET_PASSWORD);
     setupOTA(-1, DEVICE_NAME);
     setupWebSerial(DEVICE_NAME);
 
     Serial.println("Ready");
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());      // Initialize PJON
-    bus.strategy.set_pin(PJON_PIN);
-    bus.set_receiver(receiver_function);      // Configure PJON for reliable communication
-    bus.set_acknowledge(false);          // Disable acknowledgments
-    bus.set_crc_32(true);               // Enable 32-bit CRC for better error detection
-    bus.set_packet_auto_deletion(true); // Auto-delete delivered packets
+    Serial.println(WiFi.localIP());
     
-    bus.begin();
-      Serial.print("PJON Slave initialized with ID: ");
-    Serial.println(SLAVE_ID);
-    Serial.print("Slave Type: ");
-    Serial.println(SLAVE_TYPE);    Serial.print("Listening on pin: ");
-    Serial.println(PJON_PIN);
-    Serial.println("ACK disabled, CRC-32 enabled");
-    Serial.print("Heartbeat interval: ");
-    Serial.print(HEARTBEAT_INTERVAL);
-    Serial.println("ms");
+    // Register command handlers
+    slave.setCommandHandler(0x10, handleLedCommand);        // LED control
+    slave.setCommandHandler(0x20, handleTemperatureRequest); // Temperature request
+    slave.setCommandHandler(0x30, handleCustomCommand);      // Custom command
     
-    WebSerial.print("PJON Slave ID: ");
-    WebSerial.println(SLAVE_ID);
-    WebSerial.print("Type: ");
-    WebSerial.println(SLAVE_TYPE);
-    WebSerial.print("Pin: ");
-    WebSerial.println(PJON_PIN);
-    WebSerial.print("Heartbeat: ");
-    WebSerial.print(HEARTBEAT_INTERVAL);
-    WebSerial.println("ms");
+    // Initialize the slave
+    slave.begin();
     
-    Serial.println("Setup complete - will send heartbeats to master");
+    Serial.printf("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+    
+    WebSerial.printf("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+    WebSerial.println("Command handlers registered:");
+    WebSerial.println("  0x10 - LED Control");
+    WebSerial.println("  0x20 - Temperature Request");
+    WebSerial.println("  0x30 - Custom Command");
+    WebSerial.flush();
+    
+    Serial.println("Setup complete - sending heartbeats to master");
 }
 
 void loop()
 {
     // Handle OTA updates
     handleOTA();
-      // Update PJON (handle incoming messages)
-    bus.update();
-    bus.receive();
     
-    // Send heartbeat every second
-    static unsigned long lastHeartbeat = 0;
-    if (millis() - lastHeartbeat > HEARTBEAT_INTERVAL) {
-        sendHeartbeat();
-                WebSerial.println("Slave device alive and blinking");
-
-        lastHeartbeat = millis();
-    }
+    // Update slave (handles incoming messages and heartbeats)
+    slave.update();
     
-    // Small delay for PJON timing stability
-    delay(10);
+    // Handle LED blinking if active
+    blinkLed();
     
-    // Blink LED periodically 
-    if (blinking()) {
+    // Status indication
+    static unsigned long lastStatus = 0;
+    if (millis() - lastStatus > 10000) { // Every 10 seconds
+        WebSerial.println("Slave alive and listening");
         WebSerial.flush();
+        lastStatus = millis();
     }
-}
-
-// PJON message receiver function
-void receiver_function(uint8_t *payload, uint16_t length, const PJON_Packet_Info &packet_info)
-{
-    if (length < 1) return;
     
-    uint8_t messageType = payload[0];
-    
-    Serial.print("Received message from ID ");
-    Serial.print(packet_info.tx.id);
-    Serial.print(", type: 0x");
-    Serial.println(messageType, HEX);
-    
-    WebSerial.print("Message from ID ");
-    WebSerial.print(packet_info.tx.id);
-    WebSerial.print(", type: 0x");
-    WebSerial.println(messageType, HEX);
-    WebSerial.flush();
-    
-    // Currently we only send heartbeats, no incoming message handling needed
-    Serial.print("Unknown/unsupported message type: 0x");
-    Serial.println(messageType, HEX);
-}
-
-void sendHeartbeat()
-{
-    // Prepare heartbeat message: messageType + slaveId + slaveType
-    uint8_t heartbeat[3] = {HEARTBEAT, SLAVE_ID, SLAVE_TYPE};
-    
-    // Send heartbeat without checking result (as requested)
-    bus.send(MASTER_ID, heartbeat, sizeof(heartbeat));
-    
-    Serial.print("Heartbeat sent - ID:");
-    Serial.print(SLAVE_ID);
-    Serial.print(", Type:");
-    Serial.println(SLAVE_TYPE);
-}
-
-bool blinking(void)
-{
-    constexpr uint32_t interval = 2000;     // interval at which to blink (milliseconds)
-    static uint32_t nextMillis = millis(); // will store next time LED will updated
-
-    if (millis() > nextMillis)
-    {
-        nextMillis += interval;        // save the next time you blinked the LED
-        static uint8_t ledState = LOW; // ledState used to set the LED
-        if (ledState == LOW) ledState = HIGH;
-        else ledState = LOW;
-        digitalWrite(pin_led, ledState);
-        return 1;
-    }
-    return 0;
+    // Small delay for stability
+    delay(10);
 }
