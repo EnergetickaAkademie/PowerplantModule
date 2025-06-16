@@ -83,7 +83,6 @@ void loop() {
     // ...existing code...
     
     // Small delay to prevent excessive CPU usage
-    delay(10);
 }
 ```
 

@@ -66,14 +66,14 @@ void handleTemperatureRequest(uint8_t* data, uint16_t length, uint8_t senderId) 
 }
 
 void handleCustomCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
-    Serial.printf("Custom command from master %d, data length: %d\n", senderId, length);
+    WebSerial.printf("Custom command from master %d, data length: %d\n", senderId, length);
     
     if (length > 0) {
-        Serial.print("Data: ");
+        WebSerial.print("Data: ");
         for (uint16_t i = 0; i < length; i++) {
-            Serial.printf("0x%02X ", data[i]);
+            WebSerial.printf("0x%02X ", data[i]);
         }
-        Serial.println();
+        WebSerial.println();
         
         // Start LED blinking for 5 seconds
         ledBlinking = true;
@@ -82,6 +82,18 @@ void handleCustomCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
         WebSerial.printf("Custom command received with %d bytes\n", length);
         WebSerial.flush();
     }
+}
+
+// Debug receive handler - called for every received message
+void debugReceiveHandler(uint8_t* payload, uint16_t length, uint8_t senderId, uint8_t messageType) {
+    Serial.printf("[DEBUG] RX from master %d: type=0x%02X, len=%d\n", senderId, messageType, length);
+    
+    // Log to WebSerial with less spam
+    static unsigned long lastDebugLog = 0;
+    WebSerial.printf("[DEBUG] RX: ID=%d, Type=0x%02X, Len=%d\n", senderId, messageType, length);
+    WebSerial.flush();
+    lastDebugLog = millis();
+    
 }
 
 void blinkLed() {
@@ -121,22 +133,24 @@ void setup()
     Serial.println("Ready");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
-    
-    // Register command handlers
+      // Register command handlers
     slave.setCommandHandler(0x10, handleLedCommand);        // LED control
     slave.setCommandHandler(0x20, handleTemperatureRequest); // Temperature request
     slave.setCommandHandler(0x30, handleCustomCommand);      // Custom command
+    
+    // Set debug receive handler
+    slave.setDebugReceiveHandler(debugReceiveHandler);
     
     // Initialize the slave
     slave.begin();
     
     Serial.printf("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
-    
-    WebSerial.printf("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+      WebSerial.printf("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
     WebSerial.println("Command handlers registered:");
     WebSerial.println("  0x10 - LED Control");
     WebSerial.println("  0x20 - Temperature Request");
     WebSerial.println("  0x30 - Custom Command");
+    WebSerial.println("Debug receive handler enabled");
     WebSerial.flush();
     
     Serial.println("Setup complete - sending heartbeats to master");
@@ -162,5 +176,4 @@ void loop()
     }
     
     // Small delay for stability
-    delay(10);
 }
