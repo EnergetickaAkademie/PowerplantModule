@@ -1,5 +1,6 @@
 #include "oled.h"
 
+// Constructor: Initializes the member variables, including the _display object.
 OLEDDisplay::OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi, int8_t resetPin)
     : _screenWidth(screenWidth), 
       _screenHeight(screenHeight),
@@ -7,12 +8,22 @@ OLEDDisplay::OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi
       _resetPin(resetPin),
       _display(screenWidth, screenHeight, twi, resetPin) {}
 
-bool OLEDDisplay::begin(uint8_t i2cAddress, bool switchvcc) {
-    if (!_display.begin(switchvcc ? SSD1306_SWITCHCAPVCC : 0, i2cAddress)) {
-        return false;
+// init() is called by the PeripheralFactory. It initializes the actual display.
+void OLEDDisplay::init() {
+    // The I2C address is often 0x3C. We use that as a default.
+    if (!_display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        // In a real scenario, you might want to handle this failure.
     }
-    return true;
+    // Set up some default states
+    _display.clearDisplay();
+    _display.setTextColor(SSD1306_WHITE);
+    _display.setTextSize(1);
+    _display.setCursor(0,0);
+    _display.display();
 }
+
+// --- Wrapper Methods ---
+// The rest of the methods simply call the corresponding method on the _display object.
 
 void OLEDDisplay::clear() {
     _display.clearDisplay();
@@ -102,6 +113,7 @@ void OLEDDisplay::println() {
     _display.println();
 }
 
+// getDisplay() returns a reference to the internal _display object.
 Adafruit_SSD1306& OLEDDisplay::getDisplay() {
     return _display;
 }

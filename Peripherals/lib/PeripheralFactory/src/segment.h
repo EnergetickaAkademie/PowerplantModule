@@ -1,14 +1,15 @@
 #ifndef SEGMENT_H
 #define SEGMENT_H
 
-#include <LedControl.h> // Using the standard LedControl library
+#include <LedControl.h>
+#include "Peripheral.h"
 
-class Segment {
+class Segment : public Peripheral {
 public:
     // Constructor takes dataPin, clockPin, csPin (chip select/load), and total number of daisy-chained MAX7219 devices
     Segment(int dataPin, int clkPin, int csPin, int numDevices);
 
-    void begin(); // Initializes all displays
+    void init() override; // Renamed from begin()
     void setBrightness(int intensity); // Set brightness for all devices (0-15)
     void clearAll(); // Clears all digits on all devices
 

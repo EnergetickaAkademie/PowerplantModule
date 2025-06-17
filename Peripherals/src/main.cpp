@@ -6,14 +6,12 @@
 #include <ota.h>
 
 #include "wemos_pins.h" 
-#include <segment.h>
-#include <oled.h>
-#include <motor.h>
+#include <PeripheralFactory.h>
 
 // Motor Pin Definitions
-const int MOTOR_A_IA_PIN = D5; // GPIO14 for L9110 A-IA
-const int MOTOR_A_IB_PIN = D6; // GPIO12 for L9110 A-IB
-int motorSpeed = 150;       // Max speed for ESP8266 PWM (0-1023)
+//const int MOTOR_A_IA_PIN = D5; // GPIO14 for L9110 A-IA
+//const int MOTOR_A_IB_PIN = D6; // GPIO12 for L9110 A-IB
+//int motorSpeed = 150;       // Max speed for ESP8266 PWM (0-1023)
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -28,10 +26,15 @@ int motorSpeed = 150;       // Max speed for ESP8266 PWM (0-1023)
 
 // Global Objects
 // Motor motorA(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN); // Not using the library object here
-OLEDDisplay oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
+//OLEDDisplay oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
 // Segment segment(MAX7219_DATA_PIN, MAX7219_CLK_PIN, MAX7219_CS_PIN, MAX7219_NUM_DEVICES);
 
-Motor motor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
+//Motor motor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
+
+PeripheralFactory factory;
+OLEDDisplay* oled = factory.createOLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
+LED* led = factory.createLed(LED_BUILTIN);
+Motor* motorA = factory.createMotor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
 
 void setup() {
     Serial.begin(115200);
@@ -39,23 +42,9 @@ void setup() {
 
     setupOTA();
 
-    motor.begin();
+    factory.init();
 
     Serial.println(F("Motor pins initialized."));
-
-    if (!oled.begin(I2C_ADDRESS)) {
-        Serial.println(F("SSD1306 allocation failed"));
-    } else {
-        oled.show();
-        delay(1000);
-        oled.clear();
-        oled.setTextColor(SSD1306_WHITE);
-        oled.setTextSize(1);
-        oled.setCursor(0,0);
-        oled.print(F("Motor Control Ready"));
-        oled.show();
-        Serial.println(F("OLED Initialized."));
-    }
 
     // segment.begin();
     // segment.setBrightness(5);
@@ -63,46 +52,26 @@ void setup() {
     Serial.println(F("Ready"));
     Serial.print(F("IP address: "));
     Serial.println(WiFi.localIP());
+
+    led->startBlink(500);
 }
 
 void loop() {
     handleOTA();
+    
+    //blink the LED
 
-    Serial.println(F("Running motor A forward..."));
-    oled.clear();
-    oled.setCursor(0,10);
-    oled.print(F("Motor A: Forward"));
-    oled.show();
-    motor.forward(motorSpeed);
-    delay(3000); 
+    //show the current number of millis from the start
 
-    Serial.println(F("Stopping motor A..."));
-    oled.clear();
-    oled.setCursor(0,10);
-    oled.print(F("Motor A: Stop"));
-    oled.show();
-    motor.stop();
-    delay(2000); 
+    unsigned long currentMillis = millis();
 
-    Serial.println(F("Running motor A backward..."));
-    oled.clear();
-    oled.setCursor(0,10);
-    oled.print(F("Motor A: Backward"));
-    oled.show();
-    motor.forward(motorSpeed);
-    delay(3000); 
+    oled->clear();
+    oled->setCursor(0, 0);
+    oled->setTextSize(3);
+    oled->setTextColor(SSD1306_WHITE);
+    oled->print(F("Millis: "));
+    oled->print(currentMillis);
+    oled->show();
 
-    Serial.println(F("Stopping motor A..."));
-    oled.clear();
-    oled.setCursor(0,10);
-    oled.print(F("Motor A: Stop"));
-    oled.show();
-    motor.stop();
-    delay(2000); 
-
-    Serial.println(F("Repeating motor test sequence..."));
-    oled.clear();
-    oled.setCursor(0,10);
-    oled.print(F("Sequence Repeat..."));
-    oled.show();
+    factory.update();
 }

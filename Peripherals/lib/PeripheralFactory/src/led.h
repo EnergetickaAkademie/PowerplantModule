@@ -2,16 +2,17 @@
 #define LED_H
 
 #include <Arduino.h>
+#include "Peripheral.h"
 
-class Led {
+class LED : public Peripheral {
 public:
-    Led(int pin);
-    void begin();
+    LED(int pin);
+    void init() override; // Renamed from begin()
     void on();
     void off();
     void startBlink(unsigned long interval);
     void stopBlink(bool leaveOn = false);
-    void update(); // Call this in your main loop
+    void update() override; // This already fits the Peripheral interface
 
 private:
     int _pin;

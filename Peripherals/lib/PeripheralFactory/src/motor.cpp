@@ -5,7 +5,7 @@ Motor::Motor(int pinIA, int pinIB) {
     _pinIB = pinIB;
 }
 
-void Motor::begin() {
+void Motor::init() { // Renamed from begin()
     pinMode(_pinIA, OUTPUT);
     pinMode(_pinIB, OUTPUT);
     // Ensure motor is stopped initially

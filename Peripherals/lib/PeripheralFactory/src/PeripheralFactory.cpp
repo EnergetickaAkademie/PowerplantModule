@@ -1,0 +1,65 @@
+#include "PeripheralFactory.h"
+#include <Arduino.h>
+
+PeripheralFactory::PeripheralFactory() {
+    _peripheralCount = 0;
+}
+
+PeripheralFactory::~PeripheralFactory() {
+    // Clean up all dynamically allocated peripheral objects to prevent memory leaks
+    for (int i = 0; i < _peripheralCount; i++) {
+        delete _peripherals[i];
+        _peripherals[i] = nullptr;
+    }
+}
+
+void PeripheralFactory::add(Peripheral* peripheral) {
+    if (_peripheralCount < MAX_PERIPHERALS) {
+        _peripherals[_peripheralCount] = peripheral;
+        _peripheralCount++;
+    } else {
+        Serial.println(F("Error: PeripheralFactory is full. Cannot add more peripherals."));
+        // Since the factory is responsible for memory, delete the object that couldn't be added.
+        delete peripheral;
+    }
+}
+
+LED* PeripheralFactory::createLed(int pin) {
+    LED* led = new LED(pin);
+    add(led);
+    return led;
+}
+
+Motor* PeripheralFactory::createMotor(int pinIA, int pinIB) {
+    Motor* motor = new Motor(pinIA, pinIB);
+    add(motor);
+    return motor;
+}
+
+OLEDDisplay* PeripheralFactory::createOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin) {
+    OLEDDisplay* oled = new OLEDDisplay(w, h, twi, rst_pin);
+    add(oled);
+    return oled;
+}
+
+Segment* PeripheralFactory::createSegment(int dataPin, int clkPin, int csPin, int numDevices) {
+    Segment* segment = new Segment(dataPin, clkPin, csPin, numDevices);
+    add(segment);
+    return segment;
+}
+
+void PeripheralFactory::init() {
+    for (int i = 0; i < _peripheralCount; i++) {
+        if (_peripherals[i] != nullptr) {
+            _peripherals[i]->init();
+        }
+    }
+}
+
+void PeripheralFactory::update() {
+    for (int i = 0; i < _peripheralCount; i++) {
+        if (_peripherals[i] != nullptr) {
+            _peripherals[i]->update();
+        }
+    }
+}

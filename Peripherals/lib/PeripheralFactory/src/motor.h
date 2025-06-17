@@ -2,11 +2,12 @@
 #define MOTOR_H
 
 #include <Arduino.h>
+#include "Peripheral.h"
 
-class Motor {
+class Motor : public Peripheral {
 public:
     Motor(int pinIA, int pinIB);
-    void begin();
+    void init() override; // Renamed from begin()
     void forward(int speed);
     void backward(int speed);
     void stop();

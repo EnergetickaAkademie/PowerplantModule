@@ -1,6 +1,6 @@
 #include "led.h"
 
-Led::Led(int pin) {
+LED::LED(int pin) {
     _pin = pin;
     _blinking = false;
     _blinkInterval = 0;
@@ -8,22 +8,22 @@ Led::Led(int pin) {
     _ledStateBlink = LOW;
 }
 
-void Led::begin() {
+void LED::init() { // Renamed from begin()
     pinMode(_pin, OUTPUT);
     off(); // Default to off
 }
 
-void Led::on() {
+void LED::on() {
     _blinking = false; // Stop blinking if it was
     digitalWrite(_pin, HIGH);
 }
 
-void Led::off() {
+void LED::off() {
     _blinking = false; // Stop blinking if it was
     digitalWrite(_pin, LOW);
 }
 
-void Led::startBlink(unsigned long interval) {
+void LED::startBlink(unsigned long interval) {
     _blinkInterval = interval;
     _blinking = true;
     _previousMillisBlink = millis(); // Reset timer for blinking
@@ -31,7 +31,7 @@ void Led::startBlink(unsigned long interval) {
     digitalWrite(_pin, _ledStateBlink);
 }
 
-void Led::stopBlink(bool leaveOn) {
+void LED::stopBlink(bool leaveOn) {
     _blinking = false;
     if (leaveOn) {
         digitalWrite(_pin, HIGH);
@@ -40,7 +40,7 @@ void Led::stopBlink(bool leaveOn) {
     }
 }
 
-void Led::update() {
+void LED::update() {
     if (_blinking) {
         unsigned long currentMillis = millis();
         if (currentMillis - _previousMillisBlink >= _blinkInterval) {

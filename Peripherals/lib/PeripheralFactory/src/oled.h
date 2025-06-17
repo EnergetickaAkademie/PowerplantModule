@@ -4,17 +4,22 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
+#include "Peripheral.h"
 
-class OLEDDisplay {
+class OLEDDisplay : public Peripheral {
 public:
     OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi = &Wire, int8_t resetPin = -1);
 
-    bool begin(uint8_t i2cAddress = 0x3C, bool switchvcc = SSD1306_SWITCHCAPVCC);
+    void init() override; // From Peripheral interface
+
+    // Public interface mirroring Adafruit's library
     void clear();
-    void show(); // Renamed from display() to avoid conflict with Adafruit_SSD1306::display
+    void show();
     void setCursor(int16_t x, int16_t y);
     void setTextSize(uint8_t size);
     void setTextColor(uint16_t color);
+    
+    // Print methods
     void print(const String &s);
     void print(const char* s);
     void print(char c);

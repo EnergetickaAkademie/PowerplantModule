@@ -7,7 +7,7 @@ Segment::Segment(int dataPin, int clkPin, int csPin, int numDevices)
     totalDigits = totalNumDevices * 8; // Each MAX7219 controls 8 digits
 }
 
-void Segment::begin() {
+void Segment::init() { // Renamed from begin()
     for (int i = 0; i < totalNumDevices; i++) {
         lc.shutdown(i, false); // Wake up MAX7219 from power-saving mode
         lc.setIntensity(i, 8); // Set a default brightness (0-15)
