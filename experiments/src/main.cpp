@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
+#include <NFCBuildingRegistry.h>
 
 // MFRC522 pin definitions for Wemos D1 Mini
 #define SS_PIN    D8   // SDA pin
@@ -9,265 +10,151 @@
 // Create MFRC522 instance
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-// Function declarations
-void readNDEFData();
-void parseNDEFMessage(byte* data, int length);
-String parseTextRecord(byte* data, int length);
+// Create building registry
+NFCBuildingRegistry buildingRegistry(&mfrc522);
+
+// Forward declarations
+void onNewBuilding(uint8_t buildingType, const String& uid);
+void onDeleteBuilding(uint8_t buildingType, const String& uid);
+void showStatistics();
+void showHelp();
+
+void onNewBuilding(uint8_t buildingType, const String& uid) {
+  Serial.println("🏢 NEW BUILDING REGISTERED!");
+  Serial.println("   Type: " + String(buildingType));
+  Serial.println("   UID: " + uid);
+  Serial.println("   Total in database: " + String(buildingRegistry.getDatabaseSize()));
+  
+  // Debug: Check if building is actually in database
+  if (buildingRegistry.hasBuilding(uid)) {
+    Serial.println("   ✅ Confirmed: Building is in database");
+  } else {
+    Serial.println("   ❌ ERROR: Building NOT found in database after adding!");
+  }
+  Serial.println();
+}
+
+void onDeleteBuilding(uint8_t buildingType, const String& uid) {
+  Serial.println("🗑️ BUILDING DELETED!");
+  Serial.println("   Type: " + String(buildingType));
+  Serial.println("   UID: " + uid);
+  Serial.println("   Remaining in database: " + String(buildingRegistry.getDatabaseSize()));
+  
+  // Debug: Check if building is actually removed from database
+  if (!buildingRegistry.hasBuilding(uid)) {
+    Serial.println("   ✅ Confirmed: Building removed from database");
+  } else {
+    Serial.println("   ❌ ERROR: Building STILL in database after deletion!");
+  }
+  Serial.println();
+}
 
 void setup() {
-  // Initialize serial communication
   Serial.begin(115200);
   Serial.println();
-  Serial.println("=== MFRC522 NFC Forum Type 2 Reader ===");
-  Serial.println("Initializing...");
+  Serial.println("=== NFC Building Registry Test ===");
+  Serial.println("Library version: 1.0.0");
   
   // Initialize SPI bus
   SPI.begin();
   
   // Initialize MFRC522
   mfrc522.PCD_Init();
-  
-  // Show details of the MFRC522 reader
   mfrc522.PCD_DumpVersionToSerial();
   
-  Serial.println("Ready to read NFC Forum Type 2 tags!");
-  Serial.println("Place an NFC tag near the reader...");
+  // Set up event callbacks
+  buildingRegistry.setOnNewBuildingCallback(onNewBuilding);
+  buildingRegistry.setOnDeleteBuildingCallback(onDeleteBuilding);
+  
+  Serial.println();
+  Serial.println("Available commands:");
+  Serial.println("  'd' - Toggle delete mode (currently: " + String(buildingRegistry.isDeleteMode() ? "ON" : "OFF") + ")");
+  Serial.println("  'c' - Clear building database");
+  Serial.println("  'p' - Print all buildings");
+  Serial.println("  's' - Show statistics");
+  Serial.println("  'h' - Show this help");
+  Serial.println();
+  Serial.println("Ready! Place NFC cards near the reader...");
   Serial.println();
 }
 
 void loop() {
-  // Look for new cards
-  if (!mfrc522.PICC_IsNewCardPresent()) {
-    return;
+  // Handle serial commands
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    command.toLowerCase();
+    
+    if (command == "d") {
+      buildingRegistry.setDeleteMode(!buildingRegistry.isDeleteMode());
+      Serial.println("Delete mode: " + String(buildingRegistry.isDeleteMode() ? "ON" : "OFF"));
+    }
+    else if (command == "c") {
+      buildingRegistry.clearDatabase();
+      Serial.println("✅ Database cleared!");
+    }
+    else if (command == "p") {
+      buildingRegistry.printDatabase();
+    }
+    else if (command == "s") {
+      showStatistics();
+    }
+    else if (command == "h") {
+      showHelp();
+    }
+    else if (command.length() > 0) {
+      Serial.println("Unknown command: '" + command + "'. Type 'h' for help.");
+    }
+    Serial.println();
   }
   
-  // Select one of the cards
-  if (!mfrc522.PICC_ReadCardSerial()) {
-    return;
-  }
+  // Scan for NFC cards
+  buildingRegistry.scanForCards();
   
-  Serial.println("=== NFC Tag Detected ===");
+  delay(100); // Prevent flooding
+}
+
+void showStatistics() {
+  Serial.println("=== Building Database Statistics ===");
+  Serial.println("Total buildings: " + String(buildingRegistry.getDatabaseSize()));
+  Serial.println("Delete mode: " + String(buildingRegistry.isDeleteMode() ? "ENABLED" : "DISABLED"));
   
-  // Show tag UID
-  Serial.print("Tag UID: ");
-  for (byte i = 0; i < mfrc522.uid.size; i++) {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
-  }
-  Serial.println();
-  
-  // Show tag type
-  MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-  Serial.print("Tag Type: ");
-  Serial.println(mfrc522.PICC_GetTypeName(piccType));
-  
-  // Check if it's an NTAG or similar NFC Forum Type 2 tag
-  if (piccType == MFRC522::PICC_TYPE_MIFARE_UL) {
-    Serial.println("NFC Forum Type 2 tag detected (NTAG/MIFARE Ultralight)");
-    readNDEFData();
+  if (buildingRegistry.getDatabaseSize() > 0) {
+    // Count buildings by type
+    auto allBuildings = buildingRegistry.getAllBuildings();
+    std::map<uint8_t, int> typeCounts;
+    
+    for (const auto& pair : allBuildings) {
+      uint8_t type = pair.second.buildingType;
+      typeCounts[type]++;
+    }
+    
+    Serial.println("\nBuildings by type:");
+    for (const auto& pair : typeCounts) {
+      Serial.println("  Type " + String(pair.first) + ": " + String(pair.second) + " building" + (pair.second == 1 ? "" : "s"));
+    }
+    
+    // Show unique building types
+    Serial.println("\nUnique building types: " + String(typeCounts.size()));
   } else {
-    Serial.println("Not an NFC Forum Type 2 tag");
+    Serial.println("Database is empty.");
   }
-  
-  // Halt the card
-  mfrc522.PICC_HaltA();
-  
-  Serial.println("========================");
-  Serial.println();
-  
-  delay(2000);  // Wait 2 seconds before next read
+  Serial.println("====================================");
 }
 
-void readNDEFData() {
-  byte buffer[18];
-  byte size = sizeof(buffer);
-  MFRC522::StatusCode status;
-  
-  Serial.println("Reading NDEF data from NFC Forum Type 2 tag...");
-  
-  // For NTAG213/215/216, NDEF data typically starts at page 4
-  // Each page is 4 bytes, and we can read 4 pages at a time (16 bytes total)
-  
-  // Read capability container (CC) at page 3
-  status = mfrc522.MIFARE_Read(3, buffer, &size);
-  if (status != MFRC522::STATUS_OK) {
-    Serial.print("Failed to read CC: ");
-    Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
-  }
-  
-  Serial.print("Capability Container: ");
-  for (int i = 0; i < 4; i++) {
-    Serial.print(buffer[i] < 0x10 ? "0" : "");
-    Serial.print(buffer[i], HEX);
-    Serial.print(" ");
-  }
+void showHelp() {
+  Serial.println("=== Available Commands ===");
+  Serial.println("  'd' - Toggle delete mode");
+  Serial.println("  'c' - Clear building database");
+  Serial.println("  'p' - Print all registered buildings");
+  Serial.println("  's' - Show database statistics");
+  Serial.println("  'h' - Show this help message");
   Serial.println();
-  
-  // Check if NDEF is present (magic number 0xE1)
-  if (buffer[0] != 0xE1) {
-    Serial.println("No NDEF data found (CC magic number not present)");
-    return;
-  }
-  
-  // Read NDEF data starting from page 4
-  byte ndefData[512];  // Buffer for NDEF data
-  int ndefLength = 0;
-  
-  // Read multiple pages to get the full NDEF message
-  for (int page = 4; page < 40; page += 4) {  // Read up to page 40
-    status = mfrc522.MIFARE_Read(page, buffer, &size);
-    if (status != MFRC522::STATUS_OK) {
-      Serial.print("Failed to read page ");
-      Serial.print(page);
-      Serial.print(": ");
-      Serial.println(mfrc522.GetStatusCodeName(status));
-      break;
-    }
-    
-    // Copy data to NDEF buffer
-    for (int i = 0; i < 16 && (ndefLength + i) < sizeof(ndefData); i++) {
-      ndefData[ndefLength + i] = buffer[i];
-    }
-    ndefLength += 16;
-    
-    // If we encounter terminator TLV (0xFE), stop reading
-    for (int i = 0; i < 16; i++) {
-      if (buffer[i] == 0xFE) {
-        Serial.println("Found NDEF terminator");
-        goto parse_ndef;
-      }
-    }
-  }
-  
-parse_ndef:
-  Serial.print("Read ");
-  Serial.print(ndefLength);
-  Serial.println(" bytes of data");
-  
-  // Print raw data for debugging
-  Serial.println("Raw NDEF data:");
-  for (int i = 0; i < min(ndefLength, 64); i++) {  // Print first 64 bytes
-    if (i % 16 == 0) {
-      Serial.printf("\n%04X: ", i);
-    }
-    Serial.printf("%02X ", ndefData[i]);
-  }
-  Serial.println();
-  
-  // Parse NDEF message
-  parseNDEFMessage(ndefData, ndefLength);
-}
-
-void parseNDEFMessage(byte* data, int length) {
-  Serial.println("\n=== Parsing NDEF Message ===");
-  
-  if (length < 3) {
-    Serial.println("Data too short for NDEF message");
-    return;
-  }
-  
-  int pos = 0;
-  
-  // Look for NDEF TLV (Type-Length-Value)
-  // NDEF TLV starts with 0x03
-  while (pos < length - 1) {
-    if (data[pos] == 0x03) {  // NDEF Message TLV
-      Serial.println("Found NDEF Message TLV");
-      pos++;  // Move past the type byte
-      
-      // Get length
-      int ndefLength = data[pos];
-      pos++;
-      
-      Serial.print("NDEF Message length: ");
-      Serial.println(ndefLength);
-      
-      if (pos + ndefLength > length) {
-        Serial.println("NDEF length exceeds available data");
-        return;
-      }
-      
-      // Parse NDEF records
-      int recordPos = 0;
-      while (recordPos < ndefLength) {
-        byte flags = data[pos + recordPos];
-        recordPos++;
-        
-        Serial.print("Record flags: 0x");
-        Serial.println(flags, HEX);
-        
-        // Check if this is the first record and if it's a Text record
-        if ((flags & 0x01) && (flags & 0x10)) {  // MB (first record) and SR (short record)
-          byte typeLength = data[pos + recordPos];
-          recordPos++;
-          
-          byte payloadLength = data[pos + recordPos];
-          recordPos++;
-          
-          Serial.print("Type length: ");
-          Serial.println(typeLength);
-          Serial.print("Payload length: ");
-          Serial.println(payloadLength);
-          
-          // Read type
-          String recordType = "";
-          for (int i = 0; i < typeLength; i++) {
-            recordType += (char)data[pos + recordPos + i];
-          }
-          recordPos += typeLength;
-          
-          Serial.print("Record type: ");
-          Serial.println(recordType);
-          
-          // If it's a Text record, parse the text
-          if (recordType == "T") {
-            String text = parseTextRecord(data + pos + recordPos, payloadLength);
-            Serial.print("Text content: \"");
-            Serial.print(text);
-            Serial.println("\"");
-          } else {
-            Serial.println("Non-text record type");
-          }
-          
-          recordPos += payloadLength;
-        } else {
-          Serial.println("Unsupported record format");
-          break;
-        }
-      }
-      
-      return;  // Found and processed NDEF message
-    }
-    pos++;
-  }
-  
-  Serial.println("No NDEF Message TLV found");
-}
-
-String parseTextRecord(byte* data, int length) {
-  if (length < 3) {
-    return "Invalid text record";
-  }
-  
-  byte statusByte = data[0];
-  byte langCodeLength = statusByte & 0x3F;  // Lower 6 bits
-  
-  Serial.print("Language code length: ");
-  Serial.println(langCodeLength);
-  
-  // Skip language code
-  int textStart = 1 + langCodeLength;
-  
-  if (textStart >= length) {
-    return "Invalid text record structure";
-  }
-  
-  // Extract text
-  String text = "";
-  for (int i = textStart; i < length; i++) {
-    text += (char)data[i];
-  }
-  
-  return text;
+  Serial.println("How it works:");
+  Serial.println("• Scan NFC cards to register buildings");
+  Serial.println("• Each card represents a building type");
+  Serial.println("• Same card won't be added twice");
+  Serial.println("• Enable delete mode to remove buildings");
+  Serial.println("• Building types are read from NDEF or derived from UID");
+  Serial.println("==========================");
 }
