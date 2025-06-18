@@ -54,6 +54,12 @@ Encoder* PeripheralFactory::createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pi
     return encoder;
 }
 
+RGBLED* PeripheralFactory::createRGBLED(uint8_t pin, uint16_t numPixels, neoPixelType type) {
+    RGBLED* rgbled = new RGBLED(pin, numPixels, type);
+    add(rgbled);
+    return rgbled;
+}
+
 void PeripheralFactory::init() {
     for (int i = 0; i < _peripheralCount; i++) {
         if (_peripherals[i] != nullptr) {

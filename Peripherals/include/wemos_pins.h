@@ -10,5 +10,6 @@
 #define D6 12
 #define D7 13
 #define D8 15
+#define A0 3
 
 #endif // BOARD_PINS_H

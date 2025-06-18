@@ -3,6 +3,7 @@
 
 #include "Peripheral.h"
 #include <ESPRotary.h>
+#include <Button2.h>
 
 class Encoder : public Peripheral {
 public:
@@ -12,24 +13,19 @@ public:
     void update() override;
 
     int16_t getValue();
-    bool isButtonPressed();
     void setValue(int16_t value);
+    bool isButtonPressed();
 
 private:
     ESPRotary _rotary;
-    uint8_t _pinSW;
-
-    // This will store the position updated by the callback
+    Button2 _button;
     volatile int16_t _currentPosition;
-
-    // Button debouncing variables
-    uint8_t _lastButtonState;
-    unsigned long _lastDebounceTime;
-    bool _buttonWasPressed;
+    volatile bool _buttonPressed;
 
     // Static members to route the C-style callback to our C++ object instance
-    static void IRAM_ATTR _static_rotation_callback(ESPRotary &r);
     static Encoder* _instance;
+    static void rotation_callback(ESPRotary &r);
+    static void button_callback(Button2& b);
 };
 
 #endif // ENCODER_H

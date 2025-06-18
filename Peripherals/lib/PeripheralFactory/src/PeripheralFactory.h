@@ -8,6 +8,7 @@
 #include "oled.h"
 #include "segment.h"
 #include "encoder.h"
+#include "rgbled.h"
 
 #define MAX_PERIPHERALS 10 
 
@@ -29,6 +30,7 @@ public:
     OLEDDisplay* createOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin = -1);
     Segment* createSegment(int dataPin, int clkPin, int csPin, int numDevices = 1);
     Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t step = 1);
+    RGBLED* createRGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
 
     /**
      * @brief Calls the init() method on all registered peripherals.
