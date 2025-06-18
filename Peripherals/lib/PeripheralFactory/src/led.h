@@ -1,25 +1,31 @@
 #ifndef LED_H
 #define LED_H
 
-#include <Arduino.h>
 #include "Peripheral.h"
+#include <Arduino.h>
 
 class LED : public Peripheral {
 public:
     LED(int pin);
-    void init() override; // Renamed from begin()
+
+    void init() override;
+    void update() override;
+
     void on();
     void off();
     void startBlink(unsigned long interval);
-    void stopBlink(bool leaveOn = false);
-    void update() override; // This already fits the Peripheral interface
+    void stopBlink();
+    
+    void setBrightness(uint8_t brightness);
 
 private:
     int _pin;
-    bool _blinking;
+    bool _isBlinking;
+    bool _ledState;
     unsigned long _blinkInterval;
-    unsigned long _previousMillisBlink;
-    int _ledStateBlink; // Stores the current state (HIGH or LOW) during blinking
+    unsigned long _lastToggleTime;
+    
+    uint8_t _brightness; 
 };
 
 #endif // LED_H

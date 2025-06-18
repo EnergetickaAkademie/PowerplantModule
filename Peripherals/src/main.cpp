@@ -8,8 +8,6 @@
 #include "wemos_pins.h" 
 #include <PeripheralFactory.h>
 
-#include <ESPRotary.h>
-
 // Motor Pin Definitions
 //const int MOTOR_A_IA_PIN = D5; // GPIO14 for L9110 A-IA
 //const int MOTOR_A_IB_PIN = D6; // GPIO12 for L9110 A-IB
@@ -39,7 +37,7 @@
 
 PeripheralFactory factory;
 OLEDDisplay* oled = factory.createOLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
-//LED* led = factory.createLed(D7);
+LED* led = factory.createLed(D4);
 Encoder* encoder = factory.createEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_PIN_SW, 0, 255, 1);
 RGBLED* rgb = factory.createRGBLED(D6);
 //Buzzer* buzzer = factory.createBuzzer(D4);
@@ -47,7 +45,6 @@ RGBLED* rgb = factory.createRGBLED(D6);
 
 //Motor* motorA = factory.createMotor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
 //Segment* segment = factory.createSegment(MAX7219_DATA_PIN, MAX7219_CLK_PIN, MAX7219_CS_PIN, MAX7219_NUM_DEVICES);
-
 
 void setup() {
     Serial.begin(115200);
@@ -72,6 +69,7 @@ void setup() {
     rgb->setBrightness(50);
     rgb->show();
 
+    led->on();
     //rotary.setChangedHandler(rotation_callback);
 }
 
@@ -107,7 +105,7 @@ void loop() {
     if (val != lastEncoderValue) {
         lastEncoderValue = val;
         switch (mode) {
-            case MODE_R: r = val; break;
+            case MODE_R: r = val; led->setBrightness(r); break;
             case MODE_G: g = val; break;
             case MODE_B: b = val; break;
             case MODE_BRIGHTNESS: brightness = val; break;

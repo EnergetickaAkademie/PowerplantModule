@@ -1,57 +1,47 @@
 #include "led.h"
 
-LED::LED(int pin) {
-    _pin = pin;
-    _blinking = false;
-    _blinkInterval = 0;
-    _previousMillisBlink = 0;
-    _ledStateBlink = LOW;
+LED::LED(int pin) 
+    : _pin(pin), _isBlinking(false), _ledState(LOW), _blinkInterval(0), _lastToggleTime(0), _brightness(255) {}
+
+void LED::init() {
+    pinMode(_pin, OUTPUT);
+    analogWrite(_pin, 0);
 }
 
-void LED::init() { // Renamed from begin()
-    pinMode(_pin, OUTPUT);
-    off(); // Default to off
+void LED::setBrightness(uint8_t brightness) {
+    _brightness = brightness;
+    if (!_isBlinking && _ledState == HIGH) {
+        analogWrite(_pin, _brightness);
+    }
 }
 
 void LED::on() {
-    _blinking = false; // Stop blinking if it was
-    digitalWrite(_pin, HIGH);
+    _isBlinking = false;
+    _ledState = HIGH;
+    analogWrite(_pin, _brightness);
 }
 
 void LED::off() {
-    _blinking = false; // Stop blinking if it was
-    digitalWrite(_pin, LOW);
+    _isBlinking = false;
+    _ledState = LOW;
+    analogWrite(_pin, 0);
 }
 
 void LED::startBlink(unsigned long interval) {
     _blinkInterval = interval;
-    _blinking = true;
-    _previousMillisBlink = millis(); // Reset timer for blinking
-    _ledStateBlink = LOW; // Start with LED off, then it will turn on
-    digitalWrite(_pin, _ledStateBlink);
+    _isBlinking = true;
+    _lastToggleTime = millis();
 }
 
-void LED::stopBlink(bool leaveOn) {
-    _blinking = false;
-    if (leaveOn) {
-        digitalWrite(_pin, HIGH);
-    } else {
-        digitalWrite(_pin, LOW);
-    }
+void LED::stopBlink() {
+    _isBlinking = false;
+    analogWrite(_pin, 0);
 }
 
 void LED::update() {
-    if (_blinking) {
-        unsigned long currentMillis = millis();
-        if (currentMillis - _previousMillisBlink >= _blinkInterval) {
-            _previousMillisBlink = currentMillis;
-            // Toggle LED state
-            if (_ledStateBlink == LOW) {
-                _ledStateBlink = HIGH;
-            } else {
-                _ledStateBlink = LOW;
-            }
-            digitalWrite(_pin, _ledStateBlink);
-        }
+    if (_isBlinking && (millis() - _lastToggleTime >= _blinkInterval)) {
+        _ledState = !_ledState;
+        analogWrite(_pin, _ledState ? _brightness : 0);
+        _lastToggleTime = millis();
     }
 }
