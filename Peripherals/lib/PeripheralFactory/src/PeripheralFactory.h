@@ -7,6 +7,7 @@
 #include "motor.h"
 #include "oled.h"
 #include "segment.h"
+#include "encoder.h"
 
 #define MAX_PERIPHERALS 10 
 
@@ -25,8 +26,9 @@ public:
     // Create methods for each peripheral type that return a typed pointer.
     LED* createLed(int pin);
     Motor* createMotor(int pinIA, int pinIB);
-    OLEDDisplay* createOLED(uint8_t w, uint8_t h, TwoWire *twi = &Wire, int8_t rst_pin = -1);
+    OLEDDisplay* createOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin = -1);
     Segment* createSegment(int dataPin, int clkPin, int csPin, int numDevices = 1);
+    Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t step = 1);
 
     /**
      * @brief Calls the init() method on all registered peripherals.

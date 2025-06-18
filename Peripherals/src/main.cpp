@@ -8,6 +8,8 @@
 #include "wemos_pins.h" 
 #include <PeripheralFactory.h>
 
+#include <ESPRotary.h>
+
 // Motor Pin Definitions
 //const int MOTOR_A_IA_PIN = D5; // GPIO14 for L9110 A-IA
 //const int MOTOR_A_IB_PIN = D6; // GPIO12 for L9110 A-IB
@@ -17,6 +19,10 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET_PIN -1
 #define I2C_ADDRESS 0x3C
+
+#define ENCODER_PIN_A  D0 
+#define ENCODER_PIN_B  D5 
+#define ENCODER_PIN_SW D6
 
 // MAX7219 Seven Segment Display Definitions (if used)
 // #define MAX7219_DATA_PIN D1
@@ -33,9 +39,21 @@
 
 PeripheralFactory factory;
 OLEDDisplay* oled = factory.createOLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET_PIN);
-LED* led = factory.createLed(LED_BUILTIN);
+LED* led = factory.createLed(D7);
+Encoder* encoder = factory.createEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_PIN_SW, 0, 200, 1);
+//ESPRotary rotary = ESPRotary(ENCODER_PIN_A, ENCODER_PIN_B, 1, 0, 100);
+
+int counter = 0;
+
 //Motor* motorA = factory.createMotor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
 //Segment* segment = factory.createSegment(MAX7219_DATA_PIN, MAX7219_CLK_PIN, MAX7219_CS_PIN, MAX7219_NUM_DEVICES);
+
+void rotation_callback(ESPRotary &r) {
+  Serial.print("Position: ");
+  Serial.print(r.getPosition());
+  Serial.print(" | Direction: ");
+  Serial.println(r.directionToString(r.getDirection()));
+}
 
 void setup() {
     Serial.begin(115200);
@@ -55,24 +73,35 @@ void setup() {
     Serial.println(WiFi.localIP());
 
     led->startBlink(500);
+
+    //rotary.setChangedHandler(rotation_callback);
 }
 
 void loop() {
-    handleOTA();
-    
-    //blink the LED
+    factory.update();
 
-    //show the current number of millis from the start
+    handleOTA();
 
     unsigned long currentMillis = millis();
 
-    oled->clear();
-    oled->setCursor(0, 0);
-    oled->setTextSize(3);
-    oled->setTextColor(SSD1306_WHITE);
-    oled->print(F("Millis: "));
-    oled->print(currentMillis);
-    oled->show();
+    if(currentMillis % 50 == 0) {
+        oled->clear();
+        oled->setCursor(0, 0);
+        oled->setTextSize(2);
+        oled->setTextColor(SSD1306_WHITE);
+        oled->print(F("Millis: "));
+        oled->print(currentMillis);
+        oled->println();
+        
+        oled->println(F("Encoder: "));
+        oled->print(encoder->getValue());
+        Serial.println(encoder->getValue());
+        
+        oled->show();
+    }
+        
+    //rotary.loop();
 
-    factory.update();
+    //Serial.print(F("Encoder Value: "));
+    //Serial.println(encoder->getValue());
 }

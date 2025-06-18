@@ -48,6 +48,12 @@ Segment* PeripheralFactory::createSegment(int dataPin, int clkPin, int csPin, in
     return segment;
 }
 
+Encoder* PeripheralFactory::createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, int16_t step) {
+    Encoder* encoder = new Encoder(pinA, pinB, pinSW, minVal, maxVal, step);
+    add(encoder);
+    return encoder;
+}
+
 void PeripheralFactory::init() {
     for (int i = 0; i < _peripheralCount; i++) {
         if (_peripherals[i] != nullptr) {
