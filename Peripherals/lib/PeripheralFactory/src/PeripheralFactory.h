@@ -9,8 +9,9 @@
 #include "segment.h"
 #include "encoder.h"
 #include "rgbled.h"
+#include "buzzer.h"
 
-#define MAX_PERIPHERALS 10 
+#define MAX_PERIPHERALS 100 
 
 /**
  * @brief Manages and creates hardware peripherals.
@@ -31,6 +32,7 @@ public:
     Segment* createSegment(int dataPin, int clkPin, int csPin, int numDevices = 1);
     Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t step = 1);
     RGBLED* createRGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
+    Buzzer* createBuzzer(uint8_t pin);
 
     /**
      * @brief Calls the init() method on all registered peripherals.

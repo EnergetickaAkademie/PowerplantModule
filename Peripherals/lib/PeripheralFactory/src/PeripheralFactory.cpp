@@ -6,7 +6,6 @@ PeripheralFactory::PeripheralFactory() {
 }
 
 PeripheralFactory::~PeripheralFactory() {
-    // Clean up all dynamically allocated peripheral objects to prevent memory leaks
     for (int i = 0; i < _peripheralCount; i++) {
         delete _peripherals[i];
         _peripherals[i] = nullptr;
@@ -19,7 +18,6 @@ void PeripheralFactory::add(Peripheral* peripheral) {
         _peripheralCount++;
     } else {
         Serial.println(F("Error: PeripheralFactory is full. Cannot add more peripherals."));
-        // Since the factory is responsible for memory, delete the object that couldn't be added.
         delete peripheral;
     }
 }
@@ -58,6 +56,12 @@ RGBLED* PeripheralFactory::createRGBLED(uint8_t pin, uint16_t numPixels, neoPixe
     RGBLED* rgbled = new RGBLED(pin, numPixels, type);
     add(rgbled);
     return rgbled;
+}
+
+Buzzer* PeripheralFactory::createBuzzer(uint8_t pin) {
+    Buzzer* buzzer = new Buzzer(pin);
+    add(buzzer);
+    return buzzer;
 }
 
 void PeripheralFactory::init() {

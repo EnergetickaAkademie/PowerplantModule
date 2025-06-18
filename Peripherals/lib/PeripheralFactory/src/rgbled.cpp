@@ -11,7 +11,7 @@ void RGBLED::init() {
 }
 
 void RGBLED::update() {
-    // No periodic update needed for static color
+
 }
 
 void RGBLED::setColor(uint8_t r, uint8_t g, uint8_t b) {

@@ -42,6 +42,7 @@ OLEDDisplay* oled = factory.createOLED(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_
 //LED* led = factory.createLed(D7);
 Encoder* encoder = factory.createEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_PIN_SW, 0, 255, 1);
 RGBLED* rgb = factory.createRGBLED(D6);
+//Buzzer* buzzer = factory.createBuzzer(D4);
 //ESPRotary rotary = ESPRotary(ENCODER_PIN_A, ENCODER_PIN_B, 1, 0, 100);
 
 //Motor* motorA = factory.createMotor(MOTOR_A_IA_PIN, MOTOR_A_IB_PIN);
@@ -99,6 +100,7 @@ void loop() {
     if (encoder->isButtonPressed()) {
         mode = static_cast<RGBMode>((mode + 1) % 4);
         setEncoderRange();
+        //buzzer->buzz(100);
     }
 
     int16_t val = encoder->getValue();
