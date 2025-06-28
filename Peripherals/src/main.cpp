@@ -1,40 +1,61 @@
 #include <Arduino.h>
 #include "wemos_pins.h"
-#include "PeripheralFactory.h"
+#include "PeripheralFactory.h" // Use the factory again
 #include "ota.h"
 #include "secrets.h"
-
-#define LATCH_PIN D1
-#define DATA_PIN  D2
-#define CLOCK_PIN D0
-#define NUM_DIGITS 8
+#include <Wire.h>
 
 PeripheralFactory factory;
-ShiftRegisterChain* shiftChain = factory.createShiftRegisterChain(LATCH_PIN, DATA_PIN, CLOCK_PIN);
+LiquidCrystal* lcd = nullptr;
 
-SegmentDisplay* display1 = factory.createSegmentDisplay(shiftChain, 8);
-//Bargraph* bargraph1 = factory.createBargraph(shiftChain, 8);
-//SegmentDisplay* display2 = factory.createSegmentDisplay(shiftChain, 4);
+// Timers for non-blocking updates
+unsigned long lastInfoUpdateTime = 0;
+unsigned long lastScrollTime = 0;
 
-unsigned long lastUpdateTime = 0;
-
-void setup() {
+void setup(){
 	Serial.begin(115200);
-	
-	//connectWifi(SECRET_SSID, SECRET_PASSWORD);
-	//setupOTA();
-	
+	Wire.begin();
+
+	lcd = factory.createLiquidCrystal(0x27, 20, 4);
+
+	connectWifi(SECRET_SSID, SECRET_PASSWORD);
+	setupOTA();
+
 	factory.init();
-	
+
+	if (lcd) {
+		lcd->setCursor(11, 0);
+		lcd->print(" <-> ESP8266 Powerplant Module                 ");
+	}
+
 	Serial.println(F("Ready"));
 	Serial.print(F("IP address: "));
 	Serial.println(WiFi.localIP());
 }
 
+
 void loop() {
-	//handleOTA();
+	handleOTA();
 	factory.update();
 
-	display1->displayNumber(millis());
-	//display1->displayString("12345678");
+	if (millis() % 250 == 0) {
+		if (lcd) {
+			lcd->scrollDisplayLeft();
+		}
+	}
+
+	if (millis() % 1000 == 0) {
+		if (lcd) {
+			lcd->setCursor(0, 1);
+			lcd->print("IP: ");
+			lcd->print(WiFi.localIP().toString().c_str());
+			lcd->print("          ");
+
+			lcd->setCursor(0, 2);
+			lcd->print("Time: ");
+			lcd->print(millis() / 1000);
+			lcd->print("s ");
+			lcd->print("          ");
+		}
+	}
 }

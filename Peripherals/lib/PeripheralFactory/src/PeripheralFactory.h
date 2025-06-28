@@ -13,6 +13,7 @@
 #include "shift_register_chain.h"
 #include "segment_display.h"
 #include "bargraph.h"
+#include "liquid_crystal.h"
 
 #define MAX_PERIPHERALS 100 
 
@@ -37,6 +38,7 @@ public:
     RGBLED* createRGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
     Buzzer* createBuzzer(uint8_t pin);
     ShiftRegisterChain* createShiftRegisterChain(uint8_t latchPin, uint8_t dataPin, uint8_t clockPin);
+    LiquidCrystal* createLiquidCrystal(uint8_t address, uint8_t cols, uint8_t rows);
 
     // --- Factory Methods for Shift Register Devices ---
     Bargraph* createBargraph(ShiftRegisterChain* chain, uint8_t numLeds = 16);

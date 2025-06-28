@@ -25,6 +25,19 @@ public:
 	 */
 	void setValue(uint8_t value);
 
+	/**
+	 * @brief Sets the display direction of the bargraph.
+	 * @param reversed If true, the bargraph will fill from top to bottom.
+	 */
+	void setReversed(bool reversed);
+
+	/**
+	 * @brief Sets the raw byte data for the bargraph LEDs.
+	 * @param data A pointer to an array of bytes representing the LED states.
+	 * @param count The number of bytes in the data array.
+	 */
+	void setRawData(const byte* data, uint8_t count);
+
 	// --- Implementations for the ShiftRegisterDevice interface ---
 	const byte* getShiftData() const override;
 	uint8_t getRegisterCount() const override;
@@ -33,6 +46,7 @@ private:
 	uint8_t _numLeds;
 	uint8_t _registerCount;
 	byte* _shiftData; // A raw pointer to a dynamically allocated array
+	bool _reversed; // Flag to control display direction
 };
 
 #endif // BARGRAPH_H

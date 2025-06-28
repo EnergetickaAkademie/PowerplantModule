@@ -88,6 +88,12 @@ SegmentDisplay* PeripheralFactory::createSegmentDisplay(ShiftRegisterChain* chai
     return display;
 }
 
+LiquidCrystal* PeripheralFactory::createLiquidCrystal(uint8_t address, uint8_t cols, uint8_t rows) {
+    LiquidCrystal* lcd = new LiquidCrystal(address, cols, rows);
+    add(lcd);
+    return lcd;
+}
+
 void PeripheralFactory::init() {
 	for (int i = 0; i < _peripheralCount; i++) {
 		if (_peripherals[i] != nullptr) {
