@@ -4,10 +4,10 @@
 #include <LedControl.h>
 #include "Peripheral.h"
 
-class Segment : public Peripheral {
+class Max7219Segment : public Peripheral {
 public:
     // Constructor takes dataPin, clockPin, csPin (chip select/load), and total number of daisy-chained MAX7219 devices
-    Segment(int dataPin, int clkPin, int csPin, int numDevices);
+    Max7219Segment(int dataPin, int clkPin, int csPin, int numDevices);
 
     void init() override; // Renamed from begin()
     void setBrightness(int intensity); // Set brightness for all devices (0-15)

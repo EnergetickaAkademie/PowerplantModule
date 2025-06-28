@@ -10,6 +10,12 @@
 		"tuple": "cpp",
 		"type_traits": "cpp",
 		"utility": "cpp",
-		"variant": "cpp"
+		"variant": "cpp",
+		"new": "cpp",
+		"deque": "cpp",
+		"list": "cpp",
+		"string": "cpp",
+		"unordered_map": "cpp",
+		"vector": "cpp"
 	}
 }

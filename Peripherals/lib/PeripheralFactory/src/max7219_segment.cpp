@@ -1,13 +1,13 @@
-#include "segment.h"
+#include "max7219_segment.h"
 #include <Arduino.h> // For sprintf, strlen
 
 // Constructor
-Segment::Segment(int dataPin, int clkPin, int csPin, int numDevices)
+Max7219Segment::Max7219Segment(int dataPin, int clkPin, int csPin, int numDevices)
     : lc(dataPin, clkPin, csPin, numDevices), totalNumDevices(numDevices) {
     totalDigits = totalNumDevices * 8;
 }
 
-void Segment::init() {
+void Max7219Segment::init() {
     for (int i = 0; i < totalNumDevices; i++) {
         lc.shutdown(i, false);
         lc.setIntensity(i, 8);
@@ -15,7 +15,7 @@ void Segment::init() {
     }
 }
 
-void Segment::setBrightness(int intensity) {
+void Max7219Segment::setBrightness(int intensity) {
     if (intensity < 0) intensity = 0;
     if (intensity > 15) intensity = 15;
     for (int i = 0; i < totalNumDevices; i++) {
@@ -23,13 +23,13 @@ void Segment::setBrightness(int intensity) {
     }
 }
 
-void Segment::clearAll() {
+void Max7219Segment::clearAll() {
     for (int i = 0; i < totalNumDevices; i++) {
         lc.clearDisplay(i);
     }
 }
 
-void Segment::setChar(int overallDigitIndex, char character, bool decimalPoint) {
+void Max7219Segment::setChar(int overallDigitIndex, char character, bool decimalPoint) {
     if (overallDigitIndex < 0 || overallDigitIndex >= totalDigits) {
         return;
     }
@@ -43,7 +43,7 @@ void Segment::setChar(int overallDigitIndex, char character, bool decimalPoint) 
     }
 }
 
-void Segment::printString(const char* text) {
+void Max7219Segment::printString(const char* text) {
     clearAll();
     int len = strlen(text);
     int currentOverallDigit = 0;
@@ -62,17 +62,17 @@ void Segment::printString(const char* text) {
     }
 }
 
-void Segment::printNumber(long number) {
+void Max7219Segment::printNumber(long number) {
     char buf[16];
     sprintf(buf, "%ld", number);
     printString(buf);
 }
 
-LedControl& Segment::getLedControlInstance() {
+LedControl& Max7219Segment::getLedControlInstance() {
     return lc;
 }
 
-void Segment::displayPower(int logicalDisplayNum, int value) {
+void Max7219Segment::displayPower(int logicalDisplayNum, int value) {
     if (logicalDisplayNum < 0 || logicalDisplayNum >= (totalNumDevices * 2)) {
         return;
     }
@@ -91,7 +91,7 @@ void Segment::displayPower(int logicalDisplayNum, int value) {
     }
 }
 
-void Segment::displayPower(int logicalDisplayNum, float value) {
+void Max7219Segment::displayPower(int logicalDisplayNum, float value) {
     if (logicalDisplayNum < 0 || logicalDisplayNum >= (totalNumDevices * 2)) {
         return;
     }
