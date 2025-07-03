@@ -37,7 +37,7 @@ ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1); // Use build flags for ID and type
 constexpr uint8_t pin_led{LED_BUILTIN};
 bool ledBlinking = false;
 unsigned long blinkStartTime = 0;
-
+ bool otaMode = false; // Flag to indicate if OTA mode is enabled
 // Command handlers
 void handleLedCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
     if (length > 0) {
@@ -125,10 +125,32 @@ void setup()
     pinMode(pin_led, OUTPUT);
     digitalWrite(pin_led, HIGH); // Turn off LED initially (inverted)
     
+    // Configure D0 for OTA mode detection
+    pinMode(D0, INPUT_PULLUP);        // HIGH by default
+    
+    // Check if D0 is low to enable OTA mode
+    otaMode = !digitalRead(D0);  // LOW = OTA mode enabled
+    
     // Connect to WiFi and setup OTA
     connectWifi(SECRET_SSID, SECRET_PASSWORD);
     setupOTA(-1, DEVICE_NAME);
     setupWebSerial(DEVICE_NAME);
+    
+    if (otaMode) {
+        Serial.println("OTA Mode enabled - D0 is LOW");
+        WebSerial.println("OTA Mode enabled - D0 is LOW");
+        WebSerial.flush();
+        
+        // In OTA mode, we'll wait for updates and not proceed with normal operation
+        while (true) {
+            handleOTA();
+            delay(100);
+        }
+    } else {
+        Serial.println("Normal mode - D0 is HIGH");
+        WebSerial.println("Normal mode - D0 is HIGH");
+        WebSerial.flush();
+    }
 
     Serial.println("Ready");
     Serial.print("IP address: ");
@@ -159,7 +181,9 @@ void setup()
 void loop()
 {
     // Handle OTA updates
+    if(otaMode)
     handleOTA();
+    
     
     // Update slave (handles incoming messages and heartbeats)
     slave.update();
@@ -170,7 +194,7 @@ void loop()
     // Status indication
     static unsigned long lastStatus = 0;
     if (millis() - lastStatus > 10000) { // Every 10 seconds
-        WebSerial.println("Slave alive and listening");
+        WebSerial.println("Slave alive and listening otaMode: " + String(otaMode ? "Enabled" : "Disabled"));
         WebSerial.flush();
         lastStatus = millis();
     }
