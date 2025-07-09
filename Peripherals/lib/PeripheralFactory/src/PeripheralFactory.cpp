@@ -40,12 +40,6 @@ OLEDDisplay* PeripheralFactory::createOLED(uint8_t w, uint8_t h, TwoWire *twi, i
 	return oled;
 }
 
-Max7219Segment* PeripheralFactory::createSegment(int dataPin, int clkPin, int csPin, int numDevices) {
-	Max7219Segment* segment = new Max7219Segment(dataPin, clkPin, csPin, numDevices);
-	add(segment);
-	return segment;
-}
-
 Encoder* PeripheralFactory::createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, int16_t step) {
 	Encoder* encoder = new Encoder(pinA, pinB, pinSW, minVal, maxVal, step);
 	add(encoder);
@@ -92,6 +86,24 @@ LiquidCrystal* PeripheralFactory::createLiquidCrystal(uint8_t address, uint8_t c
     LiquidCrystal* lcd = new LiquidCrystal(address, cols, rows);
     add(lcd);
     return lcd;
+}
+
+Button* PeripheralFactory::createButton(uint8_t pin) {
+    if (_peripheralCount < MAX_PERIPHERALS) {
+        Button* button = new Button(pin);
+        _peripherals[_peripheralCount++] = button;
+        return button;
+    }
+    return nullptr;
+}
+
+LEDButton* PeripheralFactory::createLEDButton(uint8_t buttonPin, uint8_t ledPin) {
+    if (_peripheralCount < MAX_PERIPHERALS) {
+        LEDButton* ledButton = new LEDButton(buttonPin, ledPin);
+        _peripherals[_peripheralCount++] = ledButton;
+        return ledButton;
+    }
+    return nullptr;
 }
 
 void PeripheralFactory::init() {

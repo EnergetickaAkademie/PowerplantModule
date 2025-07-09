@@ -6,7 +6,6 @@
 #include "led.h"
 #include "motor.h"
 #include "oled.h"
-#include "max7219_segment.h"
 #include "encoder.h"
 #include "rgbled.h"
 #include "buzzer.h"
@@ -14,6 +13,8 @@
 #include "segment_display.h"
 #include "bargraph.h"
 #include "liquid_crystal.h"
+#include "button.h"
+#include "ledbutton.h"
 
 #define MAX_PERIPHERALS 100 
 
@@ -33,12 +34,13 @@ public:
     LED* createLed(int pin);
     Motor* createMotor(int pinIA, int pinIB);
     OLEDDisplay* createOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin = -1);
-    Max7219Segment* createSegment(int dataPin, int clkPin, int csPin, int numDevices = 1);
     Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t step = 1);
     RGBLED* createRGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
     Buzzer* createBuzzer(uint8_t pin);
     ShiftRegisterChain* createShiftRegisterChain(uint8_t latchPin, uint8_t dataPin, uint8_t clockPin);
     LiquidCrystal* createLiquidCrystal(uint8_t address, uint8_t cols, uint8_t rows);
+    Button* createButton(uint8_t pin);
+    LEDButton* createLEDButton(uint8_t buttonPin, uint8_t ledPin);
 
     // --- Factory Methods for Shift Register Devices ---
     Bargraph* createBargraph(ShiftRegisterChain* chain, uint8_t numLeds = 16);
