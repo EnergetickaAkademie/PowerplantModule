@@ -19,9 +19,20 @@ enum class UpdateFunction {
 	TOGGLE
 };
 
+/**
+ * @brief A button that controls an LED, with various modes of operation.
+ * 
+ * This class combines a Button2 instance for button handling and an LED instance for visual feedback.
+ * It supports different modes like FOLLOW, TOGGLE, and MANUAL control of the LED, with update functions that can be added for TOGGLE, PRESS, and RELEASE events.
+ * 
+ * `LEDButton ledButton(uint8_t buttonPin, uint8_t ledPin);`
+ * @param buttonPin The GPIO pin number for the button.
+ * @param ledPin The GPIO pin number for the LED.
+ */
 class LEDButton : public Peripheral {
 public:
-	LEDButton(uint8_t buttonPin, uint8_t ledPin);
+	LEDButton(ButtonPin buttonPin, LedPin ledPin);
+	LEDButton(uint8_t buttonPin, uint8_t ledPin): LEDButton(ButtonPin{buttonPin}, LedPin{ledPin}) {}
 	~LEDButton();
 
 	void init() override;
@@ -43,6 +54,11 @@ public:
 	std::vector<std::function<void()>> releaseFuncs;
 
 	void addUpdateFunction(std::function<void()> func, UpdateFunction type);
+
+	void clearUpdateFunctions();
+
+	void clearUpdateFunctions(UpdateFunction type);
+
 private:
 	// These are now regular, non-static member functions.
 	void _followPressed(Button2& b);

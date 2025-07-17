@@ -1,7 +1,7 @@
 #include "led.h"
 
-LED::LED(int pin) 
-	: _pin(pin), _isBlinking(false), _ledState(LOW), _blinkInterval(0), _lastToggleTime(0), _brightness(255) {}
+LED::LED(Pin pin) 
+	: _pin(pin.val), _isBlinking(false), _ledState(LOW), _blinkInterval(0), _lastToggleTime(0), _brightness(255) {}
 
 void LED::init() {
 	pinMode(_pin, OUTPUT);

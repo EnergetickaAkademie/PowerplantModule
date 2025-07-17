@@ -1,6 +1,8 @@
 #ifndef PERIPHERAL_H
 #define PERIPHERAL_H
 
+#include "value_types.h"
+
 /**
  * @brief Abstract base class for all hardware peripherals.
  * 

@@ -5,6 +5,9 @@
 
 /**
  * @brief A flexible bargraph device controlled by one or more shift registers.
+ * 
+ * `Bargraph bargraph(uint8_t numLeds);`
+ * @param numLeds The total number of LEDs in the bargraph.
  */
 class Bargraph : public ShiftRegisterDevice {
 public:
@@ -12,7 +15,9 @@ public:
 	 * @brief Construct a new Bargraph object.
 	 * @param numLeds The total number of LEDs in the bargraph.
 	 */
-	Bargraph(uint8_t numLeds = 16);
+	Bargraph(NumLeds numLeds = {16});
+
+	Bargraph(uint8_t numLeds) : Bargraph(NumLeds{numLeds}) {}
 
 	/**
 	 * @brief Destructor to free the dynamically allocated memory.
@@ -37,6 +42,9 @@ public:
 	 * @param count The number of bytes in the data array.
 	 */
 	void setRawData(const byte* data, uint8_t count);
+
+	// --- Implementations for the Peripheral interface ---
+	void init() override;
 
 	// --- Implementations for the ShiftRegisterDevice interface ---
 	const byte* getShiftData() const override;

@@ -1,8 +1,8 @@
 #include "ledbutton.h"
 #include <functional> // Required for std::bind
 
-LEDButton::LEDButton(uint8_t buttonPin, uint8_t ledPin)
-	: _button(buttonPin), _mode(LEDButtonMode::MANUAL), _toggleState(false) {
+LEDButton::LEDButton(ButtonPin buttonPin, LedPin ledPin)
+	: _button(buttonPin.val), _mode(LEDButtonMode::MANUAL), _toggleState(false) {
 
 	_led = new LED(ledPin);
 }
@@ -109,5 +109,25 @@ void LEDButton::setToggleState(bool state) {
 	_toggleState = state;
 	if (_led) {
 		_led->setState(_toggleState);
+	}
+}
+
+void LEDButton::clearUpdateFunctions() {
+	toggleFuncs.clear();
+	pressFuncs.clear();
+	releaseFuncs.clear();
+}
+
+void LEDButton::clearUpdateFunctions(UpdateFunction type) {
+	switch (type) {
+		case UpdateFunction::PRESS:
+			pressFuncs.clear();
+			break;
+		case UpdateFunction::RELEASE:
+			releaseFuncs.clear();
+			break;
+		case UpdateFunction::TOGGLE:
+			toggleFuncs.clear();
+			break;
 	}
 }

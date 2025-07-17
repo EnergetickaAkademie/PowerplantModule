@@ -9,14 +9,6 @@ LEDButton* btnR = nullptr;
 LED* led1 = nullptr;
 LED* led2 = nullptr;
 
-void RedOff() {
-	btnR->setToggleState(false);
-}
-
-void GreenOff() {
-	btnG->setToggleState(false);
-}
-
 void UpdateLEDState() {
 	led1->setState(btnR->getToggleState());
 	led2->setState(btnG->getToggleState());
@@ -25,23 +17,28 @@ void UpdateLEDState() {
 void setup(){
 	Serial.begin(115200);
 
-	btnR = factory.createLEDButton(5, 4);
-	btnG = factory.createLEDButton(7, 6);
+	ShiftRegisterChain* chain = factory.create<ShiftRegisterChain>(LatchPin{8}, DataPin{9}, ClockPin{10});
 
-	led1 = factory.createLed(15);
-	led2 = factory.createLed(16);
+	Bargraph* bargraph = factory.create<Bargraph>(NumLeds{16});
+	SegmentDisplay* display = factory.create<SegmentDisplay>(NumDigits{4});
+	chain->addDevice(bargraph);
+	chain->addDevice(display);
 
-	if (btnR) {
-		btnR->setMode(LEDButtonMode::TOGGLE);
-		btnR->addUpdateFunction(GreenOff, UpdateFunction::TOGGLE);
-		btnR->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
-	}
+	btnR = factory.create<LEDButton>(ButtonPin{5}, LedPin{4});
+	btnG = factory.create<LEDButton>(ButtonPin{7}, LedPin{6});
 
-	if (btnG) {
-		btnG->setMode(LEDButtonMode::TOGGLE);
-		btnG->addUpdateFunction(RedOff, UpdateFunction::TOGGLE);
-		btnG->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
-	}
+	OLEDDisplay* oled = factory.create<OLEDDisplay>(Width{128}, Height{64}, &Wire, RstPin{-1});
+
+	led1 = factory.create<LED>(Pin{15});
+	led2 = factory.create<LED>(Pin{16});
+
+	btnR->setMode(LEDButtonMode::TOGGLE);
+	btnR->addUpdateFunction([&](){btnG->setToggleState(false);}, UpdateFunction::TOGGLE);
+	btnR->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
+
+	btnG->setMode(LEDButtonMode::TOGGLE);
+	btnG->addUpdateFunction([&](){btnG->setToggleState(false);}, UpdateFunction::TOGGLE);
+	btnG->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
 
 	factory.init();
 }

@@ -10,54 +10,62 @@
  * It handles number-to-segment conversion and multiplexing. It does not
  * directly control hardware pins; instead, it provides its data to a
  * ShiftRegisterChain controller.
+ * 
+ * `SegmentDisplay segmentDisplay(uint8_t numDigits);`
+ * @param numDigits The number of digits on the display module (e.g., 4 or 8).
  */
 class SegmentDisplay : public ShiftRegisterDevice {
 public:
-    /**
-     * @brief Construct a new Segment Display object.
-     * @param numDigits The number of digits on the display module (e.g., 4 or 8).
-     */
-    SegmentDisplay(uint8_t numDigits = 4);
-    ~SegmentDisplay(); // Add destructor declaration
+	/**
+	 * @brief Construct a new Segment Display object.
+	 * @param numDigits The number of digits on the display module (e.g., 4 or 8).
+	 */
+	SegmentDisplay(NumDigits numDigits = {4});
+	SegmentDisplay(uint8_t numDigits) : SegmentDisplay(NumDigits{numDigits}) {}
 
-    /**
-     * @brief Sets the number to be displayed.
-     * @param number The integer to display.
-     */
-    void displayNumber(long number);
-    void displayString(const char* str);
-    void clear();
+	~SegmentDisplay();
 
-    // --- Implementations for the ShiftRegisterDevice interface ---
+	/**
+	 * @brief Sets the number to be displayed.
+	 * @param number The integer to display.
+	 */
+	void displayNumber(long number);
+	void displayString(const char* str);
+	void clear();
 
-    /**
-     * @brief Gets the data to be shifted out for this device.
-     * @return A const pointer to the internal data buffer (2 bytes).
-     */
-    const byte* getShiftData() const override;
+	// --- Implementations for the Peripheral interface ---
+	void init();
 
-    /**
-     * @brief Gets the number of shift registers this device uses.
-     * @return Always returns 2 (one for segments, one for digits).
-     */
-    uint8_t getRegisterCount() const override;
+	// --- Implementations for the ShiftRegisterDevice interface ---
 
-    /**
-     * @brief Updates the internal state for multiplexing.
-     * This should be called on every loop by the chain controller.
-     */
-    void update() override;
+	/**
+	 * @brief Gets the data to be shifted out for this device.
+	 * @return A const pointer to the internal data buffer (2 bytes).
+	 */
+	const byte* getShiftData() const override;
+
+	/**
+	 * @brief Gets the number of shift registers this device uses.
+	 * @return Always returns 2 (one for segments, one for digits).
+	 */
+	uint8_t getRegisterCount() const override;
+
+	/**
+	 * @brief Updates the internal state for multiplexing.
+	 * This should be called on every loop by the chain controller.
+	 */
+	void update() override;
 
 private:
-    static const byte digitToSegment[12];
-    static const byte digitSelect[8];
+	static const byte digitToSegment[12];
+	static const byte digitSelect[8];
 
-    uint8_t _numDigits;
-    uint8_t _currentDigit;
-    byte* _digit_values; // Stores the value (0-9) for each digit position
-    bool* _dp_values;    // Stores the decimal point state for each digit
+	uint8_t _numDigits;
+	uint8_t _currentDigit;
+	byte* _digit_values; // Stores the value (0-9) for each digit position
+	bool* _dp_values;    // Stores the decimal point state for each digit
 
-    byte _shiftData[2]; 
+	byte _shiftData[2]; 
 };
 
 #endif // SEGMENT_DISPLAY_H

@@ -4,9 +4,20 @@
 #include "Peripheral.h"
 #include <Arduino.h>
 
+/**
+ * @brief A simple LED peripheral that can be controlled to turn on, off, blink, or set brightness.
+ * 
+ * This class provides methods to initialize the LED, control its state, and manage blinking behavior.
+ * It uses a PWM-capable pin for brightness control.
+ * 
+ * `LED led(uint8_t pin);`
+ * @param pin The GPIO pin number to which the LED is connected.
+ */
 class LED : public Peripheral {
 public:
-	LED(int pin);
+	LED(Pin pin);
+	LED(LedPin pin) : LED(Pin{pin.val}) {}
+	LED(uint8_t pin) : LED(Pin{pin}) {}
 
 	void init() override;
 	void update() override;

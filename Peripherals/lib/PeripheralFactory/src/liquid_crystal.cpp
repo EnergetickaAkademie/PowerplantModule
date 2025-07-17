@@ -1,7 +1,7 @@
 #include "liquid_crystal.h"
 
-LiquidCrystal::LiquidCrystal(uint8_t i2c_addr, uint8_t cols, uint8_t rows)
-	: _lcd(i2c_addr, cols, rows), _backlight_on(true) {
+LiquidCrystal::LiquidCrystal(I2cAddress i2c_addr, NumCols cols, NumRows rows)
+	: _lcd(i2c_addr.val, cols.val, rows.val), _backlight_on(true) {
 }
 
 void LiquidCrystal::init() {
