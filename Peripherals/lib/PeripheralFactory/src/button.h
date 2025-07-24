@@ -18,9 +18,7 @@ typedef std::function<void(Button2&)> button_callback_t;
  */
 class Button : public Peripheral {
 public:
-	Button(Pin pin);
-	Button(ButtonPin pin) : Button(Pin{pin.val}) {}
-	Button(uint8_t pin) : Button(Pin{pin}) {}
+	Button(uint8_t pin);
 	
 	void init() override;
 	void update() override;

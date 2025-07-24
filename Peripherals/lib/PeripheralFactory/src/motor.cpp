@@ -1,8 +1,8 @@
 #include "motor.h"
 
-Motor::Motor(PinA pinIA, PinB pinIB) {
-    _pinIA = pinIA.val;
-    _pinIB = pinIB.val;
+Motor::Motor(int pinIA, int pinIB) {
+    _pinIA = pinIA;
+    _pinIB = pinIB;
 }
 
 void Motor::init() { // Renamed from begin()

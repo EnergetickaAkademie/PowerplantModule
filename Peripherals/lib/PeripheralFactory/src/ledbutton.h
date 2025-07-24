@@ -31,8 +31,7 @@ enum class UpdateFunction {
  */
 class LEDButton : public Peripheral {
 public:
-	LEDButton(ButtonPin buttonPin, LedPin ledPin);
-	LEDButton(uint8_t buttonPin, uint8_t ledPin): LEDButton(ButtonPin{buttonPin}, LedPin{ledPin}) {}
+	LEDButton(uint8_t buttonPin,uint8_t ledPin);
 	~LEDButton();
 
 	void init() override;

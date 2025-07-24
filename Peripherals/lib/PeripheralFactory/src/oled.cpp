@@ -1,12 +1,12 @@
 #include "oled.h"
 
 // Constructor: Initializes the member variables, including the _display object.
-OLEDDisplay::OLEDDisplay(Width screenWidth, Height screenHeight, TwoWire *twi, RstPin resetPin)
-    : _screenWidth(screenWidth.val), 
-      _screenHeight(screenHeight.val),
+OLEDDisplay::OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi, int8_t resetPin)
+    : _screenWidth(screenWidth), 
+      _screenHeight(screenHeight),
       _twi(twi),
-      _resetPin(resetPin.val),
-      _display(screenWidth.val, screenHeight.val, twi, resetPin.val) {}
+      _resetPin(resetPin),
+      _display(screenWidth, screenHeight, twi, resetPin) {}
 
 // init() is called by the PeripheralFactory. It initializes the actual display.
 void OLEDDisplay::init() {

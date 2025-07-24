@@ -1,6 +1,6 @@
 #include "button.h"
 
-Button::Button(Pin pin) : _button(pin.val) {
+Button::Button(uint8_t pin) : _button(pin) {
 
 }
 

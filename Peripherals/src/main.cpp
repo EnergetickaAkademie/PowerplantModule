@@ -1,49 +1,49 @@
 #include <Arduino.h>
 #include "PeripheralFactory.h"
 
+#define LATCH_PIN D1
+#define DATA_PIN  D2
+#define CLOCK_PIN D0
+
 PeripheralFactory factory;
+ShiftRegisterChain* shiftChain = factory.createShiftRegisterChain(LATCH_PIN, DATA_PIN, CLOCK_PIN);
 
-LEDButton* btnG = nullptr;
-LEDButton* btnR = nullptr;
+Bargraph* bargraph2 = factory.createBargraph(shiftChain, 10);
+SegmentDisplay* display2 = factory.createSegmentDisplay(shiftChain, 4);
+Bargraph* bargraph1 = factory.createBargraph(shiftChain, 10);
+SegmentDisplay* display1 = factory.createSegmentDisplay(shiftChain, 4);
 
-LED* led1 = nullptr;
-LED* led2 = nullptr;
-
-void UpdateLEDState() {
-	led1->setState(btnR->getToggleState());
-	led2->setState(btnG->getToggleState());
-}
-
-void setup(){
+bool reversed;
+void setup() {
 	Serial.begin(115200);
-
-	ShiftRegisterChain* chain = factory.create<ShiftRegisterChain>(LatchPin{8}, DataPin{9}, ClockPin{10});
-
-	Bargraph* bargraph = factory.create<Bargraph>(NumLeds{16});
-	SegmentDisplay* display = factory.create<SegmentDisplay>(NumDigits{4});
-	chain->addDevice(bargraph);
-	chain->addDevice(display);
-
-	btnR = factory.create<LEDButton>(ButtonPin{5}, LedPin{4});
-	btnG = factory.create<LEDButton>(ButtonPin{7}, LedPin{6});
-
-	OLEDDisplay* oled = factory.create<OLEDDisplay>(Width{128}, Height{64}, &Wire, RstPin{-1});
-
-	led1 = factory.create<LED>(Pin{15});
-	led2 = factory.create<LED>(Pin{16});
-
-	btnR->setMode(LEDButtonMode::TOGGLE);
-	btnR->addUpdateFunction([&](){btnG->setToggleState(false);}, UpdateFunction::TOGGLE);
-	btnR->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
-
-	btnG->setMode(LEDButtonMode::TOGGLE);
-	btnG->addUpdateFunction([&](){btnG->setToggleState(false);}, UpdateFunction::TOGGLE);
-	btnG->addUpdateFunction(UpdateLEDState, UpdateFunction::TOGGLE);
-
+	
 	factory.init();
+
+	reversed = false;
 }
 
 
 void loop() {
 	factory.update();
+	
+	if(millis() % 100 == 0) {
+		float timesec = (float)millis()/1000;
+
+		display1->displayNumber(timesec, 1);
+		display2->displayNumber((float)1000 - timesec, 1);
+	}
+	
+	if(millis() % 1000 == 0) {
+
+		bargraph1->setValue((millis() / 1000) % 11);
+		bargraph2->setValue((millis() / 1000) % 11);
+
+		if ((millis() / 1000) % 11 == 0) {
+			reversed = !reversed;
+			bargraph1->setReversed(reversed);
+			bargraph2->setReversed(!reversed);
+			Serial.println(reversed ? F("Bargraph reversed") : F("Bargraph normal"));
+		}
+	}
+
 }

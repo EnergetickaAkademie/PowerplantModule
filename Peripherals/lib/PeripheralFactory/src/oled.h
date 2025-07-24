@@ -6,23 +6,9 @@
 #include <Wire.h>
 #include "Peripheral.h"
 
-/**
- * @brief A wrapper class for the Adafruit SSD1306 OLED display.
- * 
- * This class provides a simple interface to control an OLED display using the Adafruit SSD1306 library.
- * It inherits from Peripheral to integrate with the PeripheralFactory framework.
- * 
- * `OLEDDisplay oled(screenWidth, screenHeight, &Wire, resetPin);`
- * @param screenWidth The width of the OLED display in pixels.
- * @param screenHeight The height of the OLED display in pixels.
- * @param twi The TwoWire instance for I2C communication (default is &Wire).
- * @param resetPin The GPIO pin used for resetting the display (default is -1, meaning no reset).
- */
 class OLEDDisplay : public Peripheral {
 public:
-    OLEDDisplay(Width screenWidth, Height screenHeight, TwoWire *twi = &Wire, RstPin resetPin = {-1});
-    OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi = &Wire, int8_t resetPin = -1)
-        : OLEDDisplay(Width{screenWidth}, Height{screenHeight}, twi, RstPin{resetPin}) {}
+    OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi = &Wire, int8_t resetPin = -1);
 
     void init() override; // From Peripheral interface
 

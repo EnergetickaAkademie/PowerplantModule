@@ -22,8 +22,8 @@ const byte SegmentDisplay::digitSelect[8] = {
 	(byte)~(1 << 4), (byte)~(1 << 5), (byte)~(1 << 6), (byte)~(1 << 7)
 };
 
-SegmentDisplay::SegmentDisplay(NumDigits numDigits) 
-	: _numDigits(numDigits.val), _currentDigit(0) {
+SegmentDisplay::SegmentDisplay(uint8_t numDigits) 
+	: _numDigits(numDigits), _currentDigit(0) {
 	_digit_values = new byte[_numDigits];
 	_dp_values = new bool[_numDigits];
 	clear(); // Initialize display to be blank
@@ -47,33 +47,37 @@ void SegmentDisplay::displayNumber(long number) {
 	displayString(buffer);
 }
 
+void SegmentDisplay::displayNumber(float number, uint8_t decimalPlaces) {
+	char buffer[_numDigits + 2];
+	snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, number);
+
+	int integerLength = 0;
+	for (int i = 0; buffer[i] != '.' && buffer[i] != '\0'; ++i) {
+		integerLength++;
+	}
+
+	displayString(buffer);
+}
+
 void SegmentDisplay::displayString(const char* str) {
 	clear();
 	int len = strlen(str);
-	int displayPos = _numDigits - 1; // Start from the rightmost digit
+	int displayPos = _numDigits - 1;
+	bool decimalFound = false;
 
 	for (int i = len - 1; i >= 0 && displayPos >= 0; i--) {
 		char c = str[i];
 		if (c >= '0' && c <= '9') {
-			_digit_values[displayPos--] = c - '0';
+			_digit_values[displayPos] = c - '0';
+			_dp_values[displayPos] = decimalFound;
+			displayPos--;
+			decimalFound = false;
 		} else if (c == '.') {
-			// Activate the decimal point for the digit to the right
-			if (displayPos < _numDigits - 1) {
-				_dp_values[displayPos + 1] = true;
-			}
+			decimalFound = true;
 		} else if (c == ' ') {
-			_digit_values[displayPos--] = 11; // Blank
+			_digit_values[displayPos--] = 11;
 		}
-		// Other characters are ignored
 	}
-}
-
-void SegmentDisplay::init() {
-	// SegmentDisplay initialization: clear display and reset state
-	clear();
-	_currentDigit = 0;
-	_shiftData[0] = 0x00;
-	_shiftData[1] = 0x00;
 }
 
 const byte* SegmentDisplay::getShiftData() const {

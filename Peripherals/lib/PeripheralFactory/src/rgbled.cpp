@@ -1,8 +1,8 @@
 #include "rgbled.h"
 #include <Arduino.h>
 
-RGBLED::RGBLED(Pin pin, NumPixels numPixels, neoPixelType type)
-    : _strip(numPixels.val, pin.val, type), _brightness(255), _r(0), _g(0), _b(0) {}
+RGBLED::RGBLED(uint8_t pin, uint16_t numPixels, neoPixelType type)
+    : _strip(numPixels, pin, type), _brightness(255), _r(0), _g(0), _b(0) {}
 
 void RGBLED::init() {
     _strip.begin();

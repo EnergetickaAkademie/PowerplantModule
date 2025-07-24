@@ -1,8 +1,8 @@
 #include "ledbutton.h"
 #include <functional> // Required for std::bind
 
-LEDButton::LEDButton(ButtonPin buttonPin, LedPin ledPin)
-	: _button(buttonPin.val), _mode(LEDButtonMode::MANUAL), _toggleState(false) {
+LEDButton::LEDButton(uint8_t buttonPin, uint8_t ledPin)
+	: _button(buttonPin), _mode(LEDButtonMode::MANUAL), _toggleState(false) {
 
 	_led = new LED(ledPin);
 }
