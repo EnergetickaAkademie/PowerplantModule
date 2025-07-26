@@ -5,19 +5,13 @@ LEDButton::LEDButton(uint8_t buttonPin, uint8_t ledPin)
 	: _button(buttonPin), _mode(LEDButtonMode::MANUAL), _toggleState(false) {
 
 	_led = new LED(ledPin);
+	
+	setMode(_mode);
 }
 
 LEDButton::~LEDButton() {
 	delete _led;
 	_led = nullptr;
-}
-
-void LEDButton::init() {
-	if (_led) {
-		_led->init();
-	}
-
-	setMode(_mode);
 }
 
 void LEDButton::update() {

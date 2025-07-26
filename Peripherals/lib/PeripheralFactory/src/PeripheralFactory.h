@@ -47,11 +47,6 @@ public:
     SegmentDisplay* createSegmentDisplay(ShiftRegisterChain* chain, uint8_t numDigits = 4);
 
     /**
-     * @brief Calls the init() method on all registered peripherals.
-     */
-    void init();
-
-    /**
      * @brief Calls the update() method on all registered peripherals.
      */
     void update();

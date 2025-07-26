@@ -7,7 +7,6 @@
 class RGBLED : public Peripheral {
 public:
     RGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
-    void init() override;
     void update() override;
     void setColor(uint8_t r, uint8_t g, uint8_t b);
     void setBrightness(uint8_t brightness);

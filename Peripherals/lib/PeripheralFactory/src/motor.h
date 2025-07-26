@@ -7,7 +7,6 @@
 class Motor : public Peripheral {
 public:
     Motor(int pinIA, int pinIB);
-    void init() override; // Renamed from begin()
     void forward(int speed);
     void backward(int speed);
     void stop();

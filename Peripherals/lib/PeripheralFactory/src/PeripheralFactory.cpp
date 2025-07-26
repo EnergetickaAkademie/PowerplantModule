@@ -79,33 +79,25 @@ LEDButton* PeripheralFactory::createLEDButton(uint8_t buttonPin, uint8_t ledPin)
 // --- Shift Register Device Factory Methods ---
 
 Bargraph* PeripheralFactory::createBargraph(ShiftRegisterChain* chain, uint8_t numLeds) {
-    if (!chain) return nullptr;
+	if (!chain) return nullptr;
 
-    Bargraph* bargraph = new Bargraph(numLeds);
-    chain->addDevice(bargraph);
-    return bargraph;
+	Bargraph* bargraph = new Bargraph(numLeds);
+	chain->addDevice(bargraph);
+	return bargraph;
 }
 
 SegmentDisplay* PeripheralFactory::createSegmentDisplay(ShiftRegisterChain* chain, uint8_t numDigits) {
-    if (!chain) return nullptr;
+	if (!chain) return nullptr;
 
-    SegmentDisplay* display = new SegmentDisplay(numDigits);
-    chain->addDevice(display);
-    return display;
+	SegmentDisplay* display = new SegmentDisplay(numDigits);
+	chain->addDevice(display);
+	return display;
 }
 
 LiquidCrystal* PeripheralFactory::createLiquidCrystal(uint8_t address, uint8_t cols, uint8_t rows) {
-    LiquidCrystal* lcd = new LiquidCrystal(address, cols, rows);
-    add(lcd);
-    return lcd;
-}
-
-void PeripheralFactory::init() {
-	for (int i = 0; i < _peripheralCount; i++) {
-		if (_peripherals[i] != nullptr) {
-			_peripherals[i]->init();
-		}
-	}
+	LiquidCrystal* lcd = new LiquidCrystal(address, cols, rows);
+	add(lcd);
+	return lcd;
 }
 
 void PeripheralFactory::update() {

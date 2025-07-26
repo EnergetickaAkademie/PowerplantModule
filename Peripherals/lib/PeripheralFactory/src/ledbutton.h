@@ -34,7 +34,6 @@ public:
 	LEDButton(uint8_t buttonPin,uint8_t ledPin);
 	~LEDButton();
 
-	void init() override;
 	void update() override;
 
 	// --- Configuration ---

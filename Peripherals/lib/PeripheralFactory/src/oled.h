@@ -10,8 +10,6 @@ class OLEDDisplay : public Peripheral {
 public:
     OLEDDisplay(uint8_t screenWidth, uint8_t screenHeight, TwoWire *twi = &Wire, int8_t resetPin = -1);
 
-    void init() override; // From Peripheral interface
-
     // Public interface mirroring Adafruit's library
     void clear();
     void show();

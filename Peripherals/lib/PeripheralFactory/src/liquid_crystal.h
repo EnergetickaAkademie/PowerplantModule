@@ -18,7 +18,6 @@ public:
 	LiquidCrystal(uint8_t i2c_addr, uint8_t cols, uint8_t rows);
 
 	// --- Implementation for the Peripheral interface ---
-	void init() override;
 	void update() override;
 
 	// --- LCD-specific methods ---

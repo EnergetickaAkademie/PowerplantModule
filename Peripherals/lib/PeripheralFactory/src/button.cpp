@@ -4,10 +4,6 @@ Button::Button(uint8_t pin) : _button(pin) {
 
 }
 
-void Button::init() {
-
-}
-
 void Button::update() {
 	_button.loop();
 }

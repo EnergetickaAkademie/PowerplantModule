@@ -2,9 +2,7 @@
 
 LiquidCrystal::LiquidCrystal(uint8_t i2c_addr, uint8_t cols, uint8_t rows)
 	: _lcd(i2c_addr, cols, rows), _backlight_on(true) {
-}
 
-void LiquidCrystal::init() {
 	_lcd.init();
 	_lcd.backlight();
 	_lcd.clear();

@@ -20,7 +20,6 @@ class Button : public Peripheral {
 public:
 	Button(uint8_t pin);
 	
-	void init() override;
 	void update() override;
 
 	void setClickHandler(button_callback_t f);

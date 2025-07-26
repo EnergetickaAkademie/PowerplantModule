@@ -1,9 +1,7 @@
 #include "shift_register_chain.h"
 
 ShiftRegisterChain::ShiftRegisterChain(uint8_t latchPin, uint8_t dataPin, uint8_t clockPin)
-    : _latchPin(latchPin), _dataPin(dataPin), _clockPin(clockPin) {}
-
-void ShiftRegisterChain::init() {
+    : _latchPin(latchPin), _dataPin(dataPin), _clockPin(clockPin) {
     pinMode(_latchPin, OUTPUT);
     pinMode(_dataPin, OUTPUT);
     pinMode(_clockPin, OUTPUT);

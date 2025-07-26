@@ -6,22 +6,30 @@
 #define CLOCK_PIN D0
 
 PeripheralFactory factory;
-ShiftRegisterChain* shiftChain = factory.createShiftRegisterChain(LATCH_PIN, DATA_PIN, CLOCK_PIN);
 
-Bargraph* bargraph2 = factory.createBargraph(shiftChain, 10);
-SegmentDisplay* display2 = factory.createSegmentDisplay(shiftChain, 4);
-Bargraph* bargraph1 = factory.createBargraph(shiftChain, 10);
-SegmentDisplay* display1 = factory.createSegmentDisplay(shiftChain, 4);
+/* DEVICES */
+ShiftRegisterChain* shiftChain = nullptr;
+
+/* SHIFT CHAIN DEVICES */
+Bargraph* bargraph2 = nullptr;
+SegmentDisplay* display2 = nullptr;
+Bargraph* bargraph1 = nullptr;
+SegmentDisplay* display1 = nullptr;
 
 bool reversed;
+
 void setup() {
 	Serial.begin(115200);
-	
-	factory.init();
+
+	shiftChain = factory.createShiftRegisterChain(LATCH_PIN, DATA_PIN, CLOCK_PIN);
+
+	bargraph2 = factory.createBargraph(shiftChain, 10);
+	display2 = factory.createSegmentDisplay(shiftChain, 4);
+	bargraph1 = factory.createBargraph(shiftChain, 10);
+	display1 = factory.createSegmentDisplay(shiftChain, 4);
 
 	reversed = false;
 }
-
 
 void loop() {
 	factory.update();
@@ -34,7 +42,6 @@ void loop() {
 	}
 	
 	if(millis() % 1000 == 0) {
-
 		bargraph1->setValue((millis() / 1000) % 11);
 		bargraph2->setValue((millis() / 1000) % 11);
 
@@ -45,5 +52,4 @@ void loop() {
 			Serial.println(reversed ? F("Bargraph reversed") : F("Bargraph normal"));
 		}
 	}
-
 }

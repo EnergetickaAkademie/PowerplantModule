@@ -9,7 +9,6 @@ class ShiftRegisterChain : public Peripheral {
 public:
     ShiftRegisterChain(uint8_t latchPin, uint8_t dataPin, uint8_t clockPin);
 
-    void init() override;
     void update() override;
 
     // Add devices to the chain, from furthest to closest to the MCU.
