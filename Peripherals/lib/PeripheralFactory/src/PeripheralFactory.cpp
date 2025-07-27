@@ -2,23 +2,21 @@
 #include <Arduino.h>
 
 PeripheralFactory::PeripheralFactory() {
-	_peripheralCount = 0;
+
 }
 
 PeripheralFactory::~PeripheralFactory() {
-	for (int i = 0; i < _peripheralCount; i++) {
-		delete _peripherals[i];
-		_peripherals[i] = nullptr;
+	for (auto& peripheral : _peripherals) {
+		delete peripheral;
+		peripheral = nullptr;
 	}
 }
 
 void PeripheralFactory::add(Peripheral* peripheral) {
-	if (_peripheralCount < MAX_PERIPHERALS) {
-		_peripherals[_peripheralCount] = peripheral;
-		_peripheralCount++;
+	if (peripheral) {
+		_peripherals.push_back(peripheral);
 	} else {
-		Serial.println(F("Error: PeripheralFactory is full. Cannot add more peripherals."));
-		delete peripheral;
+		Serial.println(F("Error: Attempted to add a null peripheral."));
 	}
 }
 
@@ -76,6 +74,12 @@ LEDButton* PeripheralFactory::createLEDButton(uint8_t buttonPin, uint8_t ledPin)
 	return ledButton;
 }
 
+Periodic* PeripheralFactory::createPeriodic(unsigned long interval, std::function<void()> callback) {
+	Periodic* periodic = new Periodic(interval, callback);
+	add(periodic);
+	return periodic;
+}
+
 // --- Shift Register Device Factory Methods ---
 
 Bargraph* PeripheralFactory::createBargraph(ShiftRegisterChain* chain, uint8_t numLeds) {
@@ -101,9 +105,9 @@ LiquidCrystal* PeripheralFactory::createLiquidCrystal(uint8_t address, uint8_t c
 }
 
 void PeripheralFactory::update() {
-	for (int i = 0; i < _peripheralCount; i++) {
-		if (_peripherals[i] != nullptr) {
-			_peripherals[i]->update();
+	for (auto& peripheral : _peripherals) {
+		if (peripheral) {
+			peripheral->update();
 		}
 	}
 }

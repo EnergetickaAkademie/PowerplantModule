@@ -1,6 +1,8 @@
 #ifndef PERIPHERAL_FACTORY_H
 #define PERIPHERAL_FACTORY_H
 
+#include <vector>
+
 #include "Peripheral.h"
 // Include all concrete peripheral headers so the factory can create them.
 #include "led.h"
@@ -15,8 +17,7 @@
 #include "liquid_crystal.h"
 #include "button.h"
 #include "ledbutton.h"
-
-#define MAX_PERIPHERALS 100 
+#include "periodic.h"
 
 /**
  * @brief Manages and creates hardware peripherals.
@@ -41,6 +42,7 @@ public:
     LiquidCrystal* createLiquidCrystal(uint8_t address, uint8_t cols, uint8_t rows);
     Button* createButton(uint8_t pin);
     LEDButton* createLEDButton(uint8_t buttonPin, uint8_t ledPin);
+    Periodic* createPeriodic(unsigned long interval, std::function<void()> callback);
 
     // --- Factory Methods for Shift Register Devices ---
     Bargraph* createBargraph(ShiftRegisterChain* chain, uint8_t numLeds = 16);
@@ -54,8 +56,7 @@ public:
 private:
     void add(Peripheral* peripheral); // Private, used internally by `create` methods
 
-    Peripheral* _peripherals[MAX_PERIPHERALS];
-    int _peripheralCount;
+    std::vector<Peripheral*> _peripherals;
 };
 
 #endif // PERIPHERAL_FACTORY_H
