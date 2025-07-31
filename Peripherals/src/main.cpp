@@ -35,6 +35,7 @@ void setup() {
 	Serial.begin(115200);
 
 	encoder1 = factory.createEncoder(ENC1_PIN_A, ENC1_PIN_B, ENC1_PIN_SW, 0, 1200);
+
 	encoder2 = factory.createEncoder(ENC2_PIN_A, ENC2_PIN_B, ENC2_PIN_SW, 0, 500);
 
 	shiftRegisterChain = factory.createShiftRegisterChain(LATCH, DIN, CLK);
@@ -44,10 +45,8 @@ void setup() {
 	bargraph1 = factory.createBargraph(shiftRegisterChain, 10);
 	segmentDisplay1 = factory.createSegmentDisplay(shiftRegisterChain, 4);
 
-	// factory.createPeriodic(100, update1);
-	// factory.createPeriodic(100, update2);
-	factory.createPeriodic(100, std::bind(updateDisplay, encoder1, bargraph1, segmentDisplay1));
-	factory.createPeriodic(100, std::bind(updateDisplay, encoder2, bargraph2, segmentDisplay2));
+	factory.createPeriodic(10, std::bind(updateDisplay, encoder1, bargraph1, segmentDisplay1));
+	factory.createPeriodic(10, std::bind(updateDisplay, encoder2, bargraph2, segmentDisplay2));
 }
 
 void loop() {
