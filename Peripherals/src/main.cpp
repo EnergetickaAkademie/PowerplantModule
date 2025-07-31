@@ -44,12 +44,8 @@ void setup() {
 	bargraph1 = factory.createBargraph(shiftRegisterChain, 10);
 	segmentDisplay1 = factory.createSegmentDisplay(shiftRegisterChain, 4);
 	
-	// factory.createPeriodic(100, update1);
-	// factory.createPeriodic(100, update2);
 	factory.createPeriodic(100, std::bind(updateDisplay, encoder1, bargraph1, segmentDisplay1));
 	factory.createPeriodic(100, std::bind(updateDisplay, encoder2, bargraph2, segmentDisplay2));
-
-	encoder1->setValue(-1);
 }
 
 void loop() {
