@@ -2,38 +2,35 @@
 #define ENCODER_H
 
 #include "Peripheral.h"
-#include <ESPRotary.h>
-#include <Button2.h>
-#include <map>
+#include <ESP32RotaryEncoder.h>
 
 class Encoder : public Peripheral {
 public:
-	Encoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t steps_per_click = 1,
-	bool enable_speedup = false, unsigned int speedup_increment = 5, unsigned int speedup_interval = 75);
-	~Encoder();
-	
-	void update() override;
+    // Simplified constructor
+    Encoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100);
+    
+    // The update method is no longer needed as the library is interrupt-driven
+    void update() override {}
 
-	int16_t getValue();
-	void setValue(int16_t value);
-	bool isButtonPressed();
-	void setRange(int16_t minVal, int16_t maxVal);
-	int16_t getUpperBound();
-	int16_t getLowerBound();
-
-	void reverse();
+    int16_t getValue();
+    void setValue(int16_t value);
+    bool isButtonPressed();
+    int16_t getUpperBound();
+    void reverse();
+    
+    // Public method that can be called from the ISR helper
+    void button_callback();
 
 private:
-	ESPRotary _rotary;
-	Button2 _button;
-	volatile int16_t _currentPosition;
-	volatile bool _buttonPressed;
-
-	// Static members to route the C-style callback to our C++ object instance
-	static std::map<ESPRotary*, Encoder*> _rotary_map;
-	static std::map<Button2*, Encoder*> _button_map;
-	static void rotation_callback(ESPRotary &r);
-	static void button_callback(Button2& b);
+    RotaryEncoder _rotary;
+    int16_t _maxVal;
+    bool _reversed = false;
+    
+    // Track the current value from the encoder callback
+    volatile int16_t _currentValue = 0;
+    
+    // We need a flag for the button press, which will be set in a callback
+    volatile bool _buttonWasPressed = false;
 };
 
 #endif // ENCODER_H

@@ -35,8 +35,7 @@ public:
     LED* createLed(int pin);
     Motor* createMotor(int pinIA, int pinIB);
     OLEDDisplay* createOLED(uint8_t w, uint8_t h, TwoWire *twi, int8_t rst_pin = -1);
-    Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100, int16_t step = 1,
-                                bool enable_speedup = true, unsigned int speedup_increment = 5, unsigned int speedup_interval = 75);
+    Encoder* createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal = 0, int16_t maxVal = 100);
     RGBLED* createRGBLED(uint8_t pin, uint16_t numPixels = 1, neoPixelType type = NEO_GRB + NEO_KHZ800);
     Buzzer* createBuzzer(uint8_t pin);
     ShiftRegisterChain* createShiftRegisterChain(uint8_t latchPin, uint8_t dataPin, uint8_t clockPin);

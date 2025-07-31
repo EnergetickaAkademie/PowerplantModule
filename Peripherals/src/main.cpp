@@ -1,14 +1,17 @@
 #include <Arduino.h>
 #include "PeripheralFactory.h"
 
-#define LATCH 2
-#define DIN 3
-#define CLK 4
+#define LATCH 15
+#define DIN   16
+#define CLK   17
 
-#define ENC1_PIN_A 6
-#define ENC1_PIN_B 7
-#define ENC2_PIN_A 8
-#define ENC2_PIN_B 9
+#define ENC1_PIN_A 4
+#define ENC1_PIN_B 5
+#define ENC1_PIN_SW 6
+
+#define ENC2_PIN_A 7
+#define ENC2_PIN_B 8
+#define ENC2_PIN_SW 18
 
 PeripheralFactory factory;
 
@@ -31,8 +34,8 @@ void updateDisplay(Encoder* enc, Bargraph* bar, SegmentDisplay* seg) {
 void setup() {
 	Serial.begin(115200);
 
-	encoder1 = factory.createEncoder(ENC1_PIN_A, ENC1_PIN_B, 15, 0, 1200, 2, true, 5, 75);
-	encoder2 = factory.createEncoder(ENC2_PIN_A, ENC2_PIN_B, 14, 0, 500, 2, true, 5, 75);
+	encoder1 = factory.createEncoder(ENC1_PIN_A, ENC1_PIN_B, ENC1_PIN_SW, 0, 1200);
+	encoder2 = factory.createEncoder(ENC2_PIN_A, ENC2_PIN_B, ENC2_PIN_SW, 0, 500);
 
 	shiftRegisterChain = factory.createShiftRegisterChain(LATCH, DIN, CLK);
 
