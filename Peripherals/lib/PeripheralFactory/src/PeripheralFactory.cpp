@@ -38,8 +38,10 @@ OLEDDisplay* PeripheralFactory::createOLED(uint8_t w, uint8_t h, TwoWire *twi, i
 	return oled;
 }
 
-Encoder* PeripheralFactory::createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, int16_t step) {
-	Encoder* encoder = new Encoder(pinA, pinB, pinSW, minVal, maxVal, step);
+Encoder* PeripheralFactory::createEncoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, int16_t step,
+	bool enable_speedup, unsigned int speedup_increment, unsigned int speedup_interval) {
+	Encoder* encoder = new Encoder(pinA, pinB, pinSW, minVal, maxVal, step,
+		enable_speedup, speedup_increment, speedup_interval);
 	add(encoder);
 	return encoder;
 }
