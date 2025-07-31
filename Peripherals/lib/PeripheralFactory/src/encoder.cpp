@@ -1,126 +1,123 @@
 #include "encoder.h"
 #include <Arduino.h>
 
-Encoder::Encoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, uint16_t speedup_ms, uint8_t speedup_multiplier)
-	: _rotary(pinA, pinB, pinSW) 
+// Static variables for ISR handling
+static Encoder* encoderInstances[10] = {nullptr};  // Support up to 10 encoders
+static uint8_t instanceCount = 0;
+
+Encoder::Encoder(uint8_t pinA, uint8_t pinB, uint8_t pinSW, int16_t minVal, int16_t maxVal, int16_t steps_per_click,
+	bool enable_speedup, unsigned int speedup_increment, unsigned int speedup_interval) : 
+	_minVal(minVal), 
+	_maxVal(maxVal),
+	_stepsPerClick(steps_per_click),
+	_pinA(pinA),
+	_pinB(pinB),
+	_pinSW(pinSW)
 {
-	// Set encoder type - assuming it has pull-ups (common for modules)
-	_rotary.setEncoderType(EncoderType::HAS_PULLUP);
+	// Create instance-specific rotary object
+	_rotary = new AiEsp32RotaryEncoder(pinA, pinB, pinSW, -1, steps_per_click, false);
 	
-	// Set boundaries using the correct method
-	_rotary.setBoundaries(minVal, maxVal, false); 
+	// Initialize before setting up interrupts
+	_rotary->begin();
+	_rotary->setBoundaries(minVal, maxVal, false);
+	_rotary->setAcceleration(enable_speedup ? speedup_increment * 100 : 0);
 	
-	// Set the knob callback to track the current value with speedup
-	_rotary.onTurned([this](long value) { 
-		static int lastDirection = 0;
-		unsigned long currentTime = millis();
+	// Register instance for ISR handling
+	if (instanceCount < 10) {
+		encoderInstances[instanceCount] = this;
+		instanceCount++;
 		
-		// Calculate the change from the last library value
-		long libDelta = value - _lastLibValue;
-		_lastLibValue = value;
-
-		if (libDelta == 0) return;
-
-		int currentDirection = (libDelta > 0) ? 1 : -1;
-		int direction = _reversed ? -currentDirection : currentDirection;
-
-		// Reset speedup if:
-		// 1. Direction changed, OR
-		// 2. We're near minimum and moving downward
-		bool nearMinimum = (_currentValue <= (_minVal + 5)); // 5 is arbitrary threshold
-		if ((lastDirection != 0 && currentDirection != lastDirection) || 
-			(nearMinimum && direction < 0)) {
-			_lastTurnTime = 0; // Completely reset speedup
+		// Set up ISR for this instance's pins
+		attachInterrupt(digitalPinToInterrupt(pinA), []{ Encoder::readEncoderISR(); }, CHANGE);
+		attachInterrupt(digitalPinToInterrupt(pinB), []{ Encoder::readEncoderISR(); }, CHANGE);
+		if (pinSW != 255) {
+			attachInterrupt(digitalPinToInterrupt(pinSW), []{ Encoder::readEncoderISR(); }, CHANGE);
 		}
-		lastDirection = currentDirection;
-
-		// Calculate step size - always 1 when near minimum
-		int stepSize = 1;
-		if (_speedupEnabled && _lastTurnTime > 0 && !nearMinimum) {
-			unsigned long timeDiff = currentTime - _lastTurnTime;
-			if (timeDiff < _speedupThreshold) {
-				stepSize = _speedupMultiplier;
-			}
-		}
-
-		// Apply change
-		int steps = abs(libDelta);
-		long valueChange = direction * stepSize * steps;
-		long newValue = _currentValue + valueChange;
-		
-		// Fixed boundary clamping with consistent types
-		if (newValue < _minVal) newValue = _minVal;
-		if (newValue > _maxVal) newValue = _maxVal;
-		
-		_currentValue = newValue;
-		_lastTurnTime = currentTime;
-	});
-	
-	// Set the button callback - it expects a function that takes unsigned long duration
-	_rotary.onPressed([this](unsigned long duration) { this->button_callback(); });
-	
-	// Initialize interrupts
-	_rotary.begin();
-	
-	// Store values for getUpperBound and initial state
-	_minVal = minVal;
-	_maxVal = maxVal;
-	_currentValue = minVal;
-	_lastLibValue = minVal;
-
-	if(speedup_ms > 0) {
-		this->enableSpeedup(true);
-		this->setSpeedupConfig(speedup_ms, speedup_multiplier);
 	}
+
+	_rotary->setEncoderValue(minVal - 1); //HACK:for some reason sets the value of +1 than the argument???
+}
+
+Encoder::~Encoder() {
+	// Remove interrupt handlers
+	detachInterrupt(digitalPinToInterrupt(_pinA));
+	detachInterrupt(digitalPinToInterrupt(_pinB));
+	if (_pinSW != 255) {
+		detachInterrupt(digitalPinToInterrupt(_pinSW));
+	}
+	
+	// Clean up instance
+	delete _rotary;
+	
+	// Remove from instances array
+	for (int i = 0; i < instanceCount; i++) {
+		if (encoderInstances[i] == this) {
+			encoderInstances[i] = nullptr;
+			break;
+		}
+	}
+}
+
+void Encoder::update() {
+	// No periodic update needed - handled by interrupts
 }
 
 int16_t Encoder::getValue() {
-	return _currentValue;
+	return _rotary->readEncoder();
 }
 
 void Encoder::setValue(int16_t value) {
-	_currentValue = value;
-	_lastLibValue = value;
+	_rotary->setEncoderValue(value);
 }
 
 bool Encoder::isButtonPressed() {
-	if (_buttonWasPressed) {
-		_buttonWasPressed = false; // Reset the flag after it's been read
-		return true;
-	}
-	return false;
+	return _rotary->isEncoderButtonDown();
+}
+
+void Encoder::setRange(int16_t minVal, int16_t maxVal) {
+	_minVal = minVal;
+	_maxVal = maxVal;
+	_rotary->setBoundaries(minVal, maxVal, false);
 }
 
 int16_t Encoder::getUpperBound() {
 	return _maxVal;
 }
 
-void Encoder::reverse() {
-	// Toggle the reverse flag - this affects how we interpret turns
-	_reversed = !_reversed;
-	// Note: The actual reversal logic is implemented in the onTurned callback
+int16_t Encoder::getLowerBound() {
+	return _minVal;
+}
+
+int16_t Encoder::getStepsPerClick() {
+	return _stepsPerClick;
 }
 
 void Encoder::enable() {
-	// Enable the encoder interrupts
-	_rotary.begin();
+	_rotary->enable();
 }
 
 void Encoder::disable() {
-	// Disable the encoder interrupts by calling end() if available
-	// Note: The ESP32RotaryEncoder library may not have an end() method
-	// In that case, we could set a flag to ignore callbacks
+	_rotary->disable();
 }
 
-void Encoder::setSpeedupConfig(uint16_t threshold_ms, uint8_t multiplier) {
-	_speedupThreshold = threshold_ms;
-	_speedupMultiplier = multiplier;
-}
-
-void Encoder::enableSpeedup(bool enabled) {
-	_speedupEnabled = enabled;
-}
-
-void Encoder::button_callback() {
-	_buttonWasPressed = true;
+void IRAM_ATTR Encoder::readEncoderISR() {
+	uint32_t status = GPIO_REG_READ(GPIO_STATUS_REG);
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_REG, status);  // Clear all interrupt flags
+	
+	for (uint8_t i = 0; i < instanceCount; i++) {
+		if (encoderInstances[i] && encoderInstances[i]->_rotary) {
+			bool pinAChanged = status & (1 << encoderInstances[i]->_pinA);
+			bool pinBChanged = status & (1 << encoderInstances[i]->_pinB);
+			
+			// Only process rotation if exactly one pin changed
+			if ((pinAChanged || pinBChanged) && !(pinAChanged && pinBChanged)) {
+				encoderInstances[i]->_rotary->readEncoder_ISR();
+			}
+			
+			// Handle button press separately
+			if (encoderInstances[i]->_pinSW != 255 && (status & (1 << encoderInstances[i]->_pinSW))) {
+				encoderInstances[i]->_rotary->readEncoder_ISR();
+			}
+		}
+	}
 }
