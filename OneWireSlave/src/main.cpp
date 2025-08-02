@@ -50,38 +50,16 @@ void handleLedCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
     }
 }
 
-void handleTemperatureRequest(uint8_t* data, uint16_t length, uint8_t senderId) {
-    // Simulate temperature reading
-    float temperature = 20.0 + (millis() % 10000) / 1000.0; // 20-30°C range
-    
-    Serial.printf("Temperature request from master %d, sending: %.2f°C\n", senderId, temperature);
-    
-    // Send response back to master
-    uint8_t response[4];
-    memcpy(response, &temperature, sizeof(temperature));
-    slave.sendResponse(0x21, response, sizeof(response)); // Response command type 0x21
-    
-    WebSerial.printf("Temperature sent: %.2f°C\n", temperature);
-    WebSerial.flush();
-}
 
-void handleCustomCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
+void handleMistyCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
     WebSerial.printf("Custom command from master %d, data length: %d\n", senderId, length);
     
+    bool mistyCommand = false;
     if (length > 0) {
-        WebSerial.print("Data: ");
-        for (uint16_t i = 0; i < length; i++) {
-            WebSerial.printf("0x%02X ", data[i]);
-        }
-        WebSerial.println();
-        
-        // Start LED blinking for 5 seconds
-        ledBlinking = true;
-        blinkStartTime = millis();
-        
-        WebSerial.printf("Custom command received with %d bytes\n", length);
-        WebSerial.flush();
+        mistyCommand = (data[0] == 1); // Example condition, adjust as needed
     }
+    digitalWrite(pin_led, mistyCommand ? LOW : HIGH); // LED is inverted on ESP8266
+    
 }
 
 // Debug receive handler - called for every received message
@@ -127,6 +105,8 @@ void setup()
     
     // Configure D0 for OTA mode detection
     pinMode(D0, INPUT_PULLUP);        // HIGH by default
+    pinMode(D2, OUTPUT); 
+    digitalWrite(D2, HIGH); // Ensure D2 is set as output for Com-Prot communication
     
     // Check if D0 is low to enable OTA mode
     otaMode = !digitalRead(D0);  // LOW = OTA mode enabled
@@ -157,8 +137,7 @@ void setup()
     Serial.println(WiFi.localIP());
       // Register command handlers
     slave.setCommandHandler(0x10, handleLedCommand);        // LED control
-    slave.setCommandHandler(0x20, handleTemperatureRequest); // Temperature request
-    slave.setCommandHandler(0x30, handleCustomCommand);      // Custom command
+    slave.setCommandHandler(0x30, handleMistyCommand);      // Custom command
     
     // Set debug receive handler
     slave.setDebugReceiveHandler(debugReceiveHandler);
