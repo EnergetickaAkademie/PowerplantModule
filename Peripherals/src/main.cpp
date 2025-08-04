@@ -13,6 +13,8 @@ void setup() {
 	Serial.begin(115200);
 
 	motor = factory.createMotor(MOTOR_A1, MOTOR_A2, 15);
+	motor->enableSpeedup(true);
+	motor->setSpeedupConfig(2.5f, 1000);
 
 	factory.createPeriodic(10000, [](){
 		motor->forward(50);
