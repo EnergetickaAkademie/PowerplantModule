@@ -16,6 +16,7 @@
 #include <com-prot.h>
 #include <ota.h>
 #include "secrets.h"
+#include "PeripheralFactory.h"
 
 // Configuration from build flags (set in platformio.ini)
 #ifndef SLAVE_ID
@@ -23,7 +24,7 @@
 #endif
 
 #ifndef SLAVE_TYPE
-#define SLAVE_TYPE 1 // Default fallback
+#define SLAVE_TYPE 7 // Default fallback
 #endif
 
 #ifndef DEVICE_NAME
@@ -33,63 +34,34 @@
 // Create slave instance
 ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1); // Use build flags for ID and type
 
-// LED control
-constexpr uint8_t pin_led{LED_BUILTIN};
-bool ledBlinking = false;
-unsigned long blinkStartTime = 0;
  bool otaMode = false; // Flag to indicate if OTA mode is enabled
-// Command handlers
-void handleLedCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
-    if (length > 0) {
-        bool ledState = data[0];
-        digitalWrite(pin_led, ledState ? LOW : HIGH); // LED is inverted on ESP8266
-        
-        Serial.printf("LED turned %s by master %d\n", ledState ? "ON" : "OFF", senderId);
-        WebSerial.printf("LED command received: %s\n", ledState ? "ON" : "OFF");
-        WebSerial.flush();
-    }
-}
-
+PeripheralFactory factory; // Create a factory instance for peripherals
+// LED pin for status indication
+Atomizer* atomizer = nullptr; // Pointer to atomizer peripheral
 
 void handleMistyCommand(uint8_t* data, uint16_t length, uint8_t senderId) {
     WebSerial.printf("Custom command from master %d, data length: %d\n", senderId, length);
-    
+    Serial.printf("Custom command from master %d, data length: %d\n", senderId, length);
     bool mistyCommand = false;
     if (length > 0) {
-        mistyCommand = (data[0] == 1); // Example condition, adjust as needed
+        mistyCommand = (data[0] == 1);
     }
-    digitalWrite(pin_led, mistyCommand ? LOW : HIGH); // LED is inverted on ESP8266
+
+    WebSerial.printf("Misty command received: %s current state: %s XORED result: %s\n", 
+        mistyCommand ? "true" : "false", 
+        atomizer->getTargetState() ? "Active" : "Inactive", 
+        (mistyCommand != atomizer->getTargetState()) ? "true" : "false");
     
+    if(mistyCommand != atomizer->getTargetState()) {
+        atomizer->toggle();
+        WebSerial.printf("Atomizer toggled, new state: %s\n", 
+            atomizer->getTargetState() ? "Active" : "Inactive");
+    }
 }
 
-// Debug receive handler - called for every received message
-void debugReceiveHandler(uint8_t* payload, uint16_t length, uint8_t senderId, uint8_t messageType) {
-    Serial.printf("[DEBUG] RX from master %d: type=0x%02X, len=%d\n", senderId, messageType, length);
-    
-    // Log to WebSerial with less spam
-    static unsigned long lastDebugLog = 0;
-    WebSerial.printf("[DEBUG] RX: ID=%d, Type=0x%02X, Len=%d\n", senderId, messageType, length);
-    WebSerial.flush();
-    lastDebugLog = millis();
-    
-}
-
-void blinkLed() {
-    static unsigned long lastBlink = 0;
-    static bool blinkState = false;
-    
-    if (ledBlinking) {
-        if (millis() - lastBlink > 200) {
-            blinkState = !blinkState;
-            digitalWrite(pin_led, blinkState ? LOW : HIGH); // LED is inverted
-            lastBlink = millis();
-        }
-        
-        // Stop blinking after 5 seconds
-        if (millis() - blinkStartTime > 5000) {
-            ledBlinking = false;
-            digitalWrite(pin_led, HIGH); // Turn off LED
-        }
+void switchAtomizer() {
+    if (atomizer) {
+        atomizer->toggle();
     }
 }
 
@@ -99,15 +71,7 @@ void setup()
     Serial.println("PJON Temperature Sensor Slave with Com-Prot");
     Serial.flush();
     Serial.println("Booting");
-    
-    pinMode(pin_led, OUTPUT);
-    digitalWrite(pin_led, HIGH); // Turn off LED initially (inverted)
-    
-    // Configure D0 for OTA mode detection
     pinMode(D0, INPUT_PULLUP);        // HIGH by default
-    pinMode(D2, OUTPUT); 
-    digitalWrite(D2, HIGH); // Ensure D2 is set as output for Com-Prot communication
-    
     // Check if D0 is low to enable OTA mode
     otaMode = !digitalRead(D0);  // LOW = OTA mode enabled
     
@@ -136,29 +100,26 @@ void setup()
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
       // Register command handlers
-    slave.setCommandHandler(0x10, handleLedCommand);        // LED control
-    slave.setCommandHandler(0x30, handleMistyCommand);      // Custom command
-    
-    // Set debug receive handler
-    slave.setDebugReceiveHandler(debugReceiveHandler);
-    
+    slave.setCommandHandler(0x10, handleMistyCommand);      // Custom command
+     
     // Initialize the slave
     slave.begin();
     
     Serial.printf("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
-      WebSerial.printf("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+    WebSerial.printf("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
     WebSerial.println("Command handlers registered:");
-    WebSerial.println("  0x10 - LED Control");
-    WebSerial.println("  0x20 - Temperature Request");
-    WebSerial.println("  0x30 - Custom Command");
+    WebSerial.println("  0x30 - atomizer Command");
     WebSerial.println("Debug receive handler enabled");
     WebSerial.flush();
     
     Serial.println("Setup complete - sending heartbeats to master");
+    atomizer = factory.createAtomizer(D2); // Create atomizer peripheral on pin D2
+    //factory.createPeriodic(1000, switchAtomizer); // Create periodic task to switch atomizer every second
 }
 
 void loop()
 {
+    factory.update(); // Update all peripherals
     // Handle OTA updates
     if(otaMode)
     handleOTA();
@@ -167,8 +128,7 @@ void loop()
     // Update slave (handles incoming messages and heartbeats)
     slave.update();
     
-    // Handle LED blinking if active
-    blinkLed();
+    
     
     // Status indication
     static unsigned long lastStatus = 0;
@@ -177,6 +137,9 @@ void loop()
         WebSerial.flush();
         lastStatus = millis();
     }
-    
+
+
+
+ 
     // Small delay for stability
 }
