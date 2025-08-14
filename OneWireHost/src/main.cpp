@@ -72,10 +72,18 @@ void loop() {
         
         // 1. Send LED toggle command (0x10) to all slaves of type 1 using broadcast
         if (master.getSlavesByType(1).size() > 0) {
-            uint8_t ledState = (millis() / 5000) % 2; // Toggle every 5 seconds
+            uint8_t ledState = (millis() / 10000) % 2; // Toggle every 5 seconds
             master.sendCommandToSlaveType(1, 0x10, &ledState, 1);
             WebSerial.printf("Sent LED broadcast command (%d) to type 1 slaves\n", ledState);
         }
+        if( master.getSlavesByType(7).size() > 0) {
+            // 1. Send LED toggle command (0x10) to all slaves of type 7 using broadcast
+            uint8_t ledState = (millis() / 10000) % 2; // Toggle every 5 seconds
+            master.sendCommandToSlaveType(7, 0x10, &ledState, 1);
+            WebSerial.printf("Sent LED broadcast command (%d) to type 7 slaves\n", ledState);
+        }
+
+
         
         // 2. Send temperature request (0x20) to all slaves of type 2 using broadcast
         if (master.getSlavesByType(2).size() > 0) {

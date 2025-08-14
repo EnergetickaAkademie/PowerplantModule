@@ -8,33 +8,9 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/ledc_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/mpu_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/twai_caps.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/uart_caps.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/HardwareSerial.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Stream.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/WString.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/pgmspace.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Printable.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_system/include/esp_system.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_err.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_compiler.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_attr.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_bit_defs.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_idf_version.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_mac.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_chip_info.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_random.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_sleep.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/touch_sensor_types.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/soc.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_assert.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/gpio_types.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/include/soc/gpio_periph.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/io_mux_reg.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_struct.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_reg.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_sig_map.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp_arduino_version.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/FreeRTOS.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/esp_additions/freertos/FreeRTOSConfig.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_compiler.h \
@@ -54,6 +30,9 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_rom/include/esp_rom_sys.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/reset_reasons.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_rom/include/esp32s3/rom/ets_sys.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/soc.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_assert.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_bit_defs.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/projdefs.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/portable.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/deprecated_definitions.h \
@@ -67,9 +46,12 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/soc/cpu.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_cpu.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/cpu_hal.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_err.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_compiler.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/cpu_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/esp32s3/include/hal/cpu_ll.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/xtensa/esp32s3/include/xtensa/config/extreg.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_attr.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/soc/compare_set.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/include/soc/soc_memory_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_system/include/esp_private/crosscore_int.h \
@@ -77,6 +59,11 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/newlib/platform_include/esp_newlib.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/heap/include/esp_heap_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/heap/include/multi_heap.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_system/include/esp_system.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_idf_version.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_mac.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_chip_info.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_random.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/port/xtensa/include/freertos/portbenchmark.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/xtensa/include/xtensa/xtensa_api.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/xtensa/include/xtensa/xtensa_context.h \
@@ -85,9 +72,18 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/task.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/list.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/esp_additions/freertos/task_snapshot.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/semphr.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/queue.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/task.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/semphr.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/esp_sleep.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/touch_sensor_types.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/gpio_types.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/include/soc/gpio_periph.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/io_mux_reg.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_struct.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_reg.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/gpio_sig_map.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/queue.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/event_groups.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/freertos/timers.h \
@@ -96,6 +92,7 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/log/include/esp_log_internal.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-matrix.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-uart.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/uart_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-gpio.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-touch.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-dac.h \
@@ -114,6 +111,24 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-psram.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-rgb-led.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-cpu.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp8266-compat.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/stdlib_noniso.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/binary.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/WCharacter.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/WString.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/pgmspace.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Stream.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Printable.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPAddress.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/WString.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Printable.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Client.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Server.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Stream.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPAddress.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/HardwareSerial.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/HWCDC.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_event/include/esp_event.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_event/include/esp_event_base.h \
@@ -153,7 +168,17 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/def.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/ip6_zone.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/include/apps/dhcpserver/dhcpserver.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/err.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_netif/include/esp_netif_sta_list.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/USBCDC.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Esp.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_partition.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_flash.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/spi_flash_types.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/esp_flash_err.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_spi_flash.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_spi_flash_counters.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/driver/include/driver/uart.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_ringbuf/include/freertos/ringbuf.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/uart_types.h
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_ringbuf/include/freertos/ringbuf.h

@@ -18,7 +18,6 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/ledc_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/mpu_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/twai_caps.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/uart_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/driver/include/driver/gpio.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_err.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_common/include/esp_compiler.h \
@@ -90,6 +89,7 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/i2c_struct.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/esp32s3/include/hal/i2c_ll.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/platform_port/include/hal/misc.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/platform_port/include/hal/assert.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/include/soc/i2c_periph.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/i2c_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-log.h \

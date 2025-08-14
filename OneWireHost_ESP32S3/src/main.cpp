@@ -1,19 +1,15 @@
 #include <Arduino.h>
 #include <com-prot.h>
-#include <ota.h>
-#include "secrets.h"
 
 // Create master instance
-// Using GPIO 18 for OneWire communication on ESP32-S3
-ComProtMaster master(1, 18); // Master ID 1, pin GPIO 18
+// Using GPIO 19 for OneWire communication on ESP32-S3
+ComProtMaster master(1, 19); // Master ID 1, pin GPIO 19
 
 // Debug receive handler - called for every received message
 void debugReceiveHandler(uint8_t* payload, uint16_t length, uint8_t senderId, uint8_t messageType) {
     // Only log non-heartbeat messages to avoid spam
     if (messageType != 0x03) { // Skip heartbeat messages
         Serial.printf("[DEBUG] RX from slave %d: type=0x%02X, len=%d\n", senderId, messageType, length);
-        WebSerial.printf("[DEBUG] RX: ID=%d, Type=0x%02X, Len=%d\n", senderId, messageType, length);
-        WebSerial.flush();
     }
     
     // Log heartbeat messages with less detail
@@ -39,14 +35,7 @@ void setup() {
     Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
     Serial.printf("PSRAM size: %d bytes\n", ESP.getPsramSize());
     
-    // Connect to WiFi and setup OTA
-    connectWifi(SECRET_SSID, SECRET_PASSWORD);
-    setupOTA(-1, "PjonMaster_ESP32S3");
-    setupWebSerial("PjonMaster_ESP32S3");
-    
     Serial.println("Ready");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
     
     // Set debug receive handler
     master.setDebugReceiveHandler(debugReceiveHandler);
@@ -55,15 +44,10 @@ void setup() {
     master.begin();
     
     Serial.println("PJON Master initialized with Com-Prot library and debug handler");
-    Serial.printf("OneWire pin: GPIO %d\n", 18);
-    WebSerial.println("PJON Master ready on ESP32-S3 - debug handler enabled");
-    WebSerial.flush();
+    Serial.printf("OneWire pin: GPIO %d\n", 19);
 }
 
 void loop() {
-    // Handle OTA updates
-    handleOTA();
-    
     // Update master (handles incoming messages and timeouts)
     master.update();
     
@@ -73,10 +57,10 @@ void loop() {
         
         // Get all connected slaves
         auto allSlaves = master.getConnectedSlaves();
-        WebSerial.printf("Connected slaves: %d\n", allSlaves.size());
+        Serial.printf("Connected slaves: %d\n", allSlaves.size());
         
         for (const auto& slave : allSlaves) {
-            WebSerial.printf("Slave ID: %d, Type: %d\n", slave.id, slave.type);
+            Serial.printf("Slave ID: %d, Type: %d\n", slave.id, slave.type);
         }
         
         // Example commands:
@@ -85,13 +69,13 @@ void loop() {
         if (master.getSlavesByType(1).size() > 0) {
             uint8_t ledState = (millis() / 5000) % 2; // Toggle every 5 seconds
             master.sendCommandToSlaveType(1, 0x10, &ledState, 1);
-            WebSerial.printf("Sent LED broadcast command (%d) to type 1 slaves\n", ledState);
+            Serial.printf("Sent LED broadcast command (%d) to type 1 slaves\n", ledState);
         }
         
         // 2. Send temperature request (0x20) to all slaves of type 2 using broadcast
         if (master.getSlavesByType(2).size() > 0) {
             master.sendCommandToSlaveType(2, 0x20);
-            WebSerial.println("Sent temperature request broadcast to type 2 slaves");
+            Serial.println("Sent temperature request broadcast to type 2 slaves");
         }
         
         // 3. Memory status update
@@ -110,17 +94,16 @@ void loop() {
     static unsigned long lastListPrint = 0;
     if (millis() - lastListPrint > 1000) {
         auto slaves = master.getConnectedSlaves();
-        WebSerial.printf("Active slaves (%d): ", slaves.size());
+        Serial.printf("Active slaves (%d): ", slaves.size());
         
         if (slaves.empty()) {
-            WebSerial.println("None");
+            Serial.println("None");
         } else {
             for (const auto& slave : slaves) {
-                WebSerial.printf("ID: %d, Type: %d ", slave.id, slave.type);
+                Serial.printf("ID: %d, Type: %d ", slave.id, slave.type);
             }
-            WebSerial.println();
+            Serial.println();
         }
-        WebSerial.flush();
         
         lastListPrint = millis();
     }

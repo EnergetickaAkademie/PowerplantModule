@@ -45,7 +45,6 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/ledc_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/mpu_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/twai_caps.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/soc/esp32s3/include/soc/uart_caps.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/cpu_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/esp32s3/include/hal/cpu_ll.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/xtensa/esp32s3/include/xtensa/config/extreg.h \
@@ -90,6 +89,7 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/log/include/esp_log_internal.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-matrix.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-uart.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/hal/include/hal/uart_types.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-gpio.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/variants/esp32s3/pins_arduino.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-touch.h \
@@ -166,7 +166,9 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/def.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/ip6_zone.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/include/apps/dhcpserver/dhcpserver.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/err.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_netif/include/esp_netif_sta_list.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/USBCDC.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Esp.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_partition.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_flash.h \
@@ -175,6 +177,8 @@
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_spi_flash.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/spi_flash/include/esp_spi_flash_counters.h \
  /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_hw_support/include/soc/esp32/spiram.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
+ /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  .pio/libdeps/esp32-s3-devkitc-1/com-prot/src/com-prot.h \
  .pio/libdeps/esp32-s3-devkitc-1/PJON/src/PJONSoftwareBitBang.h \
  .pio/libdeps/esp32-s3-devkitc-1/PJON/src/PJON.h \
@@ -189,47 +193,4 @@
  .pio/libdeps/esp32-s3-devkitc-1/PJON/src/utils/crc/PJON_CRC8.h \
  .pio/libdeps/esp32-s3-devkitc-1/PJON/src/utils/crc/PJON_CRC32.h \
  .pio/libdeps/esp32-s3-devkitc-1/PJON/src/strategies/SoftwareBitBang/SoftwareBitBang.h \
- .pio/libdeps/esp32-s3-devkitc-1/PJON/src/strategies/SoftwareBitBang/Timing.h \
- .pio/libdeps/esp32-s3-devkitc-1/EA-OTA/src/ota.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiType.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiSTA.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiGeneric.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_wifi/include/esp_smartconfig.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/wifi_provisioning/include/wifi_provisioning/manager.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/protocomm/include/common/protocomm.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/protocomm/include/security/protocomm_security.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/wifi_provisioning/include/wifi_provisioning/wifi_config.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiAP.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiScan.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Client.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiServer.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Server.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/ESPmDNS/src/ESPmDNS.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/mdns/include/mdns.h \
- .pio/libdeps/esp32-s3-devkitc-1/AsyncTCP-esphome/src/AsyncTCP.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/pbuf.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/lwip/lwip/src/include/lwip/err.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src/ArduinoOTA.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/Update/src/Update.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/MD5Builder.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/esp_rom/include/esp_rom_md5.h \
- .pio/libdeps/esp32-s3-devkitc-1/WebSerial/src/WebSerial.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/cores/esp32/stdlib_noniso.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/ESPAsyncWebServer.h \
- /home/jirka/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/StringArray.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/WebResponseImpl.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/WebHandlerImpl.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/AsyncWebSocket.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/AsyncWebSynchronization.h \
- .pio/libdeps/esp32-s3-devkitc-1/ESPAsyncWebServer-esphome/src/AsyncEventSource.h \
- .pio/libdeps/esp32-s3-devkitc-1/WebSerial/src/webserial_webpage.h \
- include/secrets.h
+ .pio/libdeps/esp32-s3-devkitc-1/PJON/src/strategies/SoftwareBitBang/Timing.h
