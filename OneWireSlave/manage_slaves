@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Simple wrapper for the Python slave management script
+# This allows you to use either ./manage_slaves.py or ./manage_slaves commands
+
+exec python3 "$(dirname "$0")/manage_slaves.py" "$@"
