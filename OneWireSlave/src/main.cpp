@@ -15,15 +15,15 @@
 #include <Arduino.h>
 #include <com-prot.h>
 #include "PeripheralFactory.h"
-#define DEBUG_MODE
 
 // Debug mode - uncomment to enable serial prints
-// #define DEBUG_MODE
+//#define DEBUG_MODE
+//#define DEBUG_MODE_WEB
 
 #ifdef DEBUG_MODE
-#define DEBUG_PRINT(x) Serial.print(x)
-#define DEBUG_PRINTLN(x) Serial.println(x)
-#define DEBUG_PRINTF(x, ...) Serial.printf(x, __VA_ARGS__)
+#define DEBUG_PRINT(x) Serial1.print(x)
+#define DEBUG_PRINTLN(x) Serial1.println(x)
+#define DEBUG_PRINTF(x, ...) Serial1.printf(x, __VA_ARGS__)
 #else
 #define DEBUG_PRINT(x)
 #define DEBUG_PRINTLN(x)
@@ -42,7 +42,7 @@
 #ifndef DEVICE_NAME
 #define DEVICE_NAME "PjonSlave" // Default fallback
 #endif
-#define OTA_MODE_ENABLED
+//#define OTA_MODE_ENABLED
 // --- Powerplant type identifiers (match platformio.ini) ---
 #define TYPE_PHOTOVOLTAIC 1
 #define TYPE_WIND 2
@@ -59,7 +59,7 @@
 #endif
 
 // Create slave instance
-ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1); // Use build flags for ID and type
+ComProtSlave slave(SLAVE_ID, SLAVE_TYPE); // Use build flags for ID and type
 
 bool otaMode = false;      // Flag to indicate if OTA mode is enabled
 PeripheralFactory factory; // Create a factory instance for peripherals
@@ -165,10 +165,14 @@ void switchAtomizer()
 
 void setup()
 {
-    Serial.begin(115200);
-    DEBUG_PRINTLN("PJON Temperature Sensor Slave with Com-Prot");
-    Serial.flush();
-    DEBUG_PRINTLN("Booting");
+    // Note: Serial is now used for PJON communication via ThroughSerialAsync
+    // Debug output should use Serial1 or be disabled in production
+#ifdef DEBUG_MODE
+    Serial1.begin(115200);
+    Serial1.println("PJON Temperature Sensor Slave with Com-Prot");
+    Serial1.flush();
+    Serial1.println("Booting");
+#endif
     pinMode(D0, INPUT_PULLUP); // HIGH by default
     
     // Check if D0 is low to enable OTA mode
@@ -195,15 +199,29 @@ void setup()
     }
 #endif
 
-    DEBUG_PRINTLN("Normal mode - D0 is HIGH or OTA disabled");
+#ifdef DEBUG_MODE
+    Serial1.println("Normal mode - D0 is HIGH or OTA disabled");
+#endif
     DEBUG_WEB_PRINTLN("Normal mode - D0 is HIGH or OTA disabled");
     DEBUG_WEB_FLUSH();
 
-    DEBUG_PRINTLN("Ready");
+#ifdef DEBUG_MODE
+    // Connect WiFi for debugging even in normal mode
+    connectWifi(SECRET_SSID, SECRET_PASSWORD);
+    setupWebSerial(DEVICE_NAME);
+#endif
+
+#ifdef DEBUG_MODE
+    Serial1.println("Ready");
+    Serial1.print("IP address: ");
+    Serial1.println(WiFi.localIP());
+#endif
 #ifdef OTA_MODE_ENABLED
     if (otaMode) {
-        DEBUG_PRINT("IP address: ");
-        DEBUG_PRINTLN(WiFi.localIP());
+#ifdef DEBUG_MODE
+        Serial1.print("IP address: ");
+        Serial1.println(WiFi.localIP());
+#endif
     }
 #endif
     // Register command handlers
@@ -213,10 +231,12 @@ void setup()
     slave.setCommandHandler(0x10, handleMistyCommand); // Custom command for nuclear and coal
 #endif
 
-    // Initialize the slave
+    // Initialize the slave (this will setup Serial for PJON at 9600 baud)
     slave.begin();
 
-    DEBUG_PRINTF("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+#ifdef DEBUG_MODE
+    Serial1.printf("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
+#endif
     DEBUG_WEB_PRINTF("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
     DEBUG_WEB_PRINTLN("Command handlers registered:");
 #if SLAVE_TYPE == TYPE_BATTERY
@@ -227,7 +247,9 @@ void setup()
     DEBUG_WEB_PRINTLN("Debug receive handler enabled");
     DEBUG_WEB_FLUSH();
 
-    DEBUG_PRINTLN("Setup complete - sending heartbeats to master");
+#ifdef DEBUG_MODE
+    Serial1.println("Setup complete - sending heartbeats to master");
+#endif
 #if SLAVE_TYPE == TYPE_BATTERY
     batteryLed = factory.createRGBLED(D2, 1); // WS2812B on D2, single pixel
     batteryLed->setBrightness(64);            // moderate brightness
@@ -247,6 +269,14 @@ void loop()
     // Handle OTA updates only if OTA mode is enabled
     if (otaMode)
         handleOTA();
+#endif
+
+#ifdef DEBUG_MODE
+    // Handle WebSerial even in normal mode
+    if (!otaMode) {
+        // Simple WebSerial update without full OTA handling
+        delay(10);
+    }
 #endif
 
     // Update slave (handles incoming messages and heartbeats)
