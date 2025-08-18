@@ -17,6 +17,8 @@
 #include "PeripheralFactory.h"
 #define DEBUG_MODE
 
+using namespace StarWire; // Add namespace for com-prot
+
 // Debug mode - uncomment to enable serial prints
 // #define DEBUG_MODE
 
@@ -58,8 +60,8 @@
 #error "Unsupported SLAVE_TYPE for this firmware. Supported: BATTERY (8), NUCLEAR (3), or COAL (7)."
 #endif
 
-// Create slave instance
-ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1); // Use build flags for ID and type
+// Create slave instance - using D1 (data) and D7 (clock) pins
+ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1, D7); // Use build flags for ID and type
 
 bool otaMode = false;      // Flag to indicate if OTA mode is enabled
 PeripheralFactory factory; // Create a factory instance for peripherals
@@ -91,16 +93,12 @@ RGBLED *batteryLed = nullptr; // Pointer to RGB LED (BATTERY type)
 #define DEBUG_WEB_FLUSH()
 #endif
 
-void handleMistyCommand(uint8_t *data, uint16_t length, uint8_t senderId)
+void handleMistyCommand(uint8_t cmd4, uint8_t senderId)
 {
-    DEBUG_WEB_PRINTF("Custom command from master %d, data length: %d\n", senderId, length);
-    DEBUG_PRINTF("Custom command from master %d, data length: %d\n", senderId, length);
-    
-    bool mistyCommand = false;
-    if (length > 0)
-    {
-        mistyCommand = (data[0] == 1);
-    }
+    DEBUG_WEB_PRINTF("Custom command from master %d, command: %d\n", senderId, cmd4);
+    DEBUG_PRINTF("Custom command from master %d, command: %d\n", senderId, cmd4);
+
+    bool mistyCommand = (cmd4 == 1); // cmd4 == 1 means turn on, cmd4 == 0 means turn off
 
     DEBUG_WEB_PRINTF("Misty command received: %s current state: %s XORED result: %s\n",
                      mistyCommand ? "true" : "false",
@@ -116,20 +114,20 @@ void handleMistyCommand(uint8_t *data, uint16_t length, uint8_t senderId)
 }
 
 // --- BATTERY command (0x20): set battery mode and color on RGB LED at D2 ---
-// data[0] values:
+// cmd4 values:
 //   1 = Charging   -> RED
 //   0 = Idle       -> ORANGE
 //   2 = Discharging-> GREEN
-static void handleBatteryModeCommand(uint8_t *data, uint16_t length, uint8_t senderId)
+static void handleBatteryModeCommand(uint8_t cmd4, uint8_t senderId)
 {
-    DEBUG_WEB_PRINTF("Battery mode cmd from master %d, len: %d\n", senderId, length);
-    if (length < 1 || batteryLed == nullptr)
+    DEBUG_WEB_PRINTF("Battery mode cmd from master %d, cmd: %d\n", senderId, cmd4);
+    if (batteryLed == nullptr)
     {
         DEBUG_WEB_PRINTLN("Invalid battery command or LED not initialized");
         return;
     }
 
-    const uint8_t mode = data[0];
+    const uint8_t mode = cmd4;
     switch (mode)
     {
     case 1: // Charging -> RED
