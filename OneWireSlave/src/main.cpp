@@ -1,15 +1,9 @@
 /*
- *    PJON Temperature Sensor Slave
- *    Using Com-Prot Library for simplified communication
- *    More stable and reliable than OneWire communication
- *
- *    Com-Prot Features:
- *    - Automatic heartbeat management
- *    - Command handler registration
- *    - Robust error handling and acknowledgments
- *    - Multi-master support
- *    - Better timing tolerance
- *    - Collision detection and retry logic
+ * StarWire Slave (ESP8266)
+ * Host sends only [type, cmd4], no payload.
+ * Examples:
+ *   0x01 = ON, 0x02 = OFF (for NUCLEAR/COAL atomizer)
+ *   0x00 = Idle, 0x01 = Charging, 0x02 = Discharging (for BATTERY LED)
  */
 
 #include <Arduino.h>
@@ -17,10 +11,7 @@
 #include "PeripheralFactory.h"
 #define DEBUG_MODE
 
-using namespace StarWire; // Add namespace for com-prot
-
-// Debug mode - uncomment to enable serial prints
-// #define DEBUG_MODE
+using namespace StarWire;
 
 #ifdef DEBUG_MODE
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -32,20 +23,18 @@ using namespace StarWire; // Add namespace for com-prot
 #define DEBUG_PRINTF(x, ...)
 #endif
 
-// Configuration from build flags (set in platformio.ini)
 #ifndef SLAVE_ID
-#define SLAVE_ID 10 // Default fallback
+#define SLAVE_ID 10
 #endif
-
 #ifndef SLAVE_TYPE
-#define SLAVE_TYPE 7 // Default fallback
+#define SLAVE_TYPE 7
+#endif
+#ifndef DEVICE_NAME
+#define DEVICE_NAME "StarWireSlave"
 #endif
 
-#ifndef DEVICE_NAME
-#define DEVICE_NAME "PjonSlave" // Default fallback
-#endif
-#define OTA_MODE_ENABLED
-// --- Powerplant type identifiers (match platformio.ini) ---
+
+// Types
 #define TYPE_PHOTOVOLTAIC 1
 #define TYPE_WIND 2
 #define TYPE_NUCLEAR 3
@@ -55,22 +44,20 @@ using namespace StarWire; // Add namespace for com-prot
 #define TYPE_COAL 7
 #define TYPE_BATTERY 8
 
-// Restrict this firmware to supported types only
-#if (SLAVE_TYPE != TYPE_BATTERY) && (SLAVE_TYPE != TYPE_NUCLEAR) && (SLAVE_TYPE != TYPE_COAL)
-#error "Unsupported SLAVE_TYPE for this firmware. Supported: BATTERY (8), NUCLEAR (3), or COAL (7)."
+#define DATA_PIN D1
+#define CLK_PIN D7
+#if (SLAVE_TYPE != TYPE_PHOTOVOLTAIC) && (SLAVE_TYPE != TYPE_WIND) && (SLAVE_TYPE != TYPE_NUCLEAR) && (SLAVE_TYPE != TYPE_GAS) && (SLAVE_TYPE != TYPE_HYDRO) && (SLAVE_TYPE != TYPE_HYDRO_STORAGE) && (SLAVE_TYPE != TYPE_COAL) && (SLAVE_TYPE != TYPE_BATTERY)
+#error "Supported SLAVE_TYPEs: PHOTOVOLTAIC(1), WIND(2), NUCLEAR(3), GAS(4), HYDRO(5), HYDRO_STORAGE(6), COAL(7), BATTERY(8)."
 #endif
 
-// Create slave instance - using D1 (data) and D7 (clock) pins
-ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, D1, D7); // Use build flags for ID and type
+ComProtSlave slave(SLAVE_ID, SLAVE_TYPE, DATA_PIN, CLK_PIN);
 
-bool otaMode = false;      // Flag to indicate if OTA mode is enabled
-PeripheralFactory factory; // Create a factory instance for peripherals
+bool otaMode = false;
+PeripheralFactory factory;
 
-// Peripherals
-Atomizer *atomizer = nullptr; // Pointer to atomizer peripheral
-RGBLED *batteryLed = nullptr; // Pointer to RGB LED (BATTERY type)
+Atomizer *atomizer = nullptr; // for NUCLEAR/COAL
+RGBLED *batteryLed = nullptr; // for BATTERY
 
-// OTA-related includes and declarations (only when needed)
 #ifdef OTA_MODE_ENABLED
 #include <ota.h>
 #include "secrets.h"
@@ -93,98 +80,85 @@ RGBLED *batteryLed = nullptr; // Pointer to RGB LED (BATTERY type)
 #define DEBUG_WEB_FLUSH()
 #endif
 
-void handleMistyCommand(uint8_t cmd4, uint8_t senderId)
+// 4-bit commands
+static const uint8_t CMD_ON = 0x01;
+static const uint8_t CMD_OFF = 0x02;
+static const uint8_t BAT_IDLE = 0x03;
+static const uint8_t BAT_CHARGING = 0x04;
+static const uint8_t BAT_DISCHARGE = 0x05;
+bool data_recieved = false;
+
+// ---------- Handlers ----------
+static void handleMisty(uint8_t cmd4, uint8_t senderId)
 {
-    DEBUG_WEB_PRINTF("Custom command from master %d, command: %d\n", senderId, cmd4);
-    DEBUG_PRINTF("Custom command from master %d, command: %d\n", senderId, cmd4);
+    DEBUG_PRINTF("[MISTY] cmd=0x%X from master %u\n", cmd4, senderId);
+    data_recieved = true;
+    if (!atomizer)
+        return;
 
-    bool mistyCommand = (cmd4 == 1); // cmd4 == 1 means turn on, cmd4 == 0 means turn off
+    bool wantOn = (cmd4 == CMD_ON);
+    bool wantOff = (cmd4 == CMD_OFF);
 
-    DEBUG_WEB_PRINTF("Misty command received: %s current state: %s XORED result: %s\n",
-                     mistyCommand ? "true" : "false",
-                     atomizer->getTargetState() ? "Active" : "Inactive",
-                     (mistyCommand != atomizer->getTargetState()) ? "true" : "false");
-
-    if (mistyCommand != atomizer->getTargetState())
+    if (!wantOn && !wantOff)
     {
-        atomizer->toggle();
-        DEBUG_WEB_PRINTF("Atomizer toggled, new state: %s\n",
-                         atomizer->getTargetState() ? "Active" : "Inactive");
-    }
-}
-
-// --- BATTERY command (0x20): set battery mode and color on RGB LED at D2 ---
-// cmd4 values:
-//   1 = Charging   -> RED
-//   0 = Idle       -> ORANGE
-//   2 = Discharging-> GREEN
-static void handleBatteryModeCommand(uint8_t cmd4, uint8_t senderId)
-{
-    DEBUG_WEB_PRINTF("Battery mode cmd from master %d, cmd: %d\n", senderId, cmd4);
-    if (batteryLed == nullptr)
-    {
-        DEBUG_WEB_PRINTLN("Invalid battery command or LED not initialized");
+        DEBUG_PRINTLN("[MISTY] Unknown cmd, ignored.");
         return;
     }
 
-    const uint8_t mode = cmd4;
-    switch (mode)
+    bool target = wantOn;
+    if (target != atomizer->getTargetState())
     {
-    case 1: // Charging -> RED
+        atomizer->toggle();
+        DEBUG_PRINTF("[MISTY] Toggled -> %s\n", atomizer->getTargetState() ? "Active" : "Inactive");
+    }
+}
+
+static void handleBattery(uint8_t cmd4, uint8_t senderId)
+{
+    data_recieved = true;
+    DEBUG_PRINTF("[BAT] cmd=0x%X from master %u\n", cmd4, senderId);
+    if (!batteryLed)
+    {
+        DEBUG_PRINTLN("[BAT] LED not initialized");
+        return;
+    }
+
+    switch (cmd4)
+    {
+    case BAT_CHARGING:
         batteryLed->setColor(255, 0, 0);
-        DEBUG_WEB_PRINTLN("Battery: Charging -> RED");
         DEBUG_PRINTLN("Battery: Charging -> RED");
         break;
-    case 0:                                // Idle -> ORANGE
-        batteryLed->setColor(255, 140, 0); // dark orange
-        DEBUG_WEB_PRINTLN("Battery: Idle -> ORANGE");
+    case BAT_IDLE:
+        batteryLed->setColor(255, 140, 0);
         DEBUG_PRINTLN("Battery: Idle -> ORANGE");
         break;
-    case 2: // Discharging -> GREEN
+    case BAT_DISCHARGE:
         batteryLed->setColor(0, 255, 0);
-        DEBUG_WEB_PRINTLN("Battery: Discharging -> GREEN");
         DEBUG_PRINTLN("Battery: Discharging -> GREEN");
         break;
     default:
-        DEBUG_WEB_PRINTF("Battery: Unknown mode %u (no change)\n", mode);
-        DEBUG_PRINTF("Battery: Unknown mode %u (no change)\n", mode);
+        DEBUG_PRINTF("Battery: Unknown cmd 0x%X (ignored)\n", cmd4);
         return;
     }
-    batteryLed->show(); // request immediate show; factory.update() will handle it
+    batteryLed->show();
 }
 
-void switchAtomizer()
-{
-    if (atomizer)
-    {
-        atomizer->toggle();
-    }
-}
-
+// ---------- Setup ----------
 void setup()
 {
     Serial.begin(115200);
-    DEBUG_PRINTLN("PJON Temperature Sensor Slave with Com-Prot");
-    Serial.flush();
-    DEBUG_PRINTLN("Booting");
-    pinMode(D0, INPUT_PULLUP); // HIGH by default
-    
-    // Check if D0 is low to enable OTA mode
-    otaMode = !digitalRead(D0); // LOW = OTA mode enabled
+    DEBUG_PRINTLN("StarWire Slave booting...");
+    pinMode(D0, INPUT_PULLUP);
 
 #ifdef OTA_MODE_ENABLED
-    // Connect to WiFi and setup OTA only if OTA mode is enabled
+    otaMode = !digitalRead(D0); // LOW -> OTA mode
     if (otaMode)
     {
         connectWifi(SECRET_SSID, SECRET_PASSWORD);
         setupOTA(-1, DEVICE_NAME);
         setupWebSerial(DEVICE_NAME);
-        
         DEBUG_PRINTLN("OTA Mode enabled - D0 is LOW");
-        DEBUG_WEB_PRINTLN("OTA Mode enabled - D0 is LOW");
-        DEBUG_WEB_FLUSH();
-
-        // In OTA mode, we'll wait for updates and not proceed with normal operation
         while (true)
         {
             handleOTA();
@@ -193,61 +167,52 @@ void setup()
     }
 #endif
 
-    DEBUG_PRINTLN("Normal mode - D0 is HIGH or OTA disabled");
-    DEBUG_WEB_PRINTLN("Normal mode - D0 is HIGH or OTA disabled");
-    DEBUG_WEB_FLUSH();
-
-    DEBUG_PRINTLN("Ready");
-#ifdef OTA_MODE_ENABLED
-    if (otaMode) {
-        DEBUG_PRINT("IP address: ");
-        DEBUG_PRINTLN(WiFi.localIP());
-    }
-#endif
-    // Register command handlers
+    // Register handlers (4-bit, no payload)
 #if SLAVE_TYPE == TYPE_BATTERY
-    slave.setCommandHandler(0x20, handleBatteryModeCommand); // Battery mode command
-#elif (SLAVE_TYPE == TYPE_NUCLEAR) || (SLAVE_TYPE == TYPE_COAL)
-    slave.setCommandHandler(0x10, handleMistyCommand); // Custom command for nuclear and coal
+    slave.setCommandHandler(BAT_IDLE, handleBattery);
+    slave.setCommandHandler(BAT_CHARGING, handleBattery);
+    slave.setCommandHandler(BAT_DISCHARGE, handleBattery);
+#else
+    // All other powerplant types use the same ON/OFF commands
+    slave.setCommandHandler(CMD_ON, handleMisty);
+    slave.setCommandHandler(CMD_OFF, handleMisty);
 #endif
 
-    // Initialize the slave
     slave.begin();
 
-    DEBUG_PRINTF("Com-Prot Slave initialized - ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
-    DEBUG_WEB_PRINTF("Slave ID: %d, Type: %d\n", SLAVE_ID, SLAVE_TYPE);
-    DEBUG_WEB_PRINTLN("Command handlers registered:");
-#if SLAVE_TYPE == TYPE_BATTERY
-    DEBUG_WEB_PRINTLN("  0x20 - battery mode (0=idle,1=charging,2=discharging)");
-#elif (SLAVE_TYPE == TYPE_NUCLEAR) || (SLAVE_TYPE == TYPE_COAL)
-    DEBUG_WEB_PRINTLN("  0x10 - custom misty command");
-#endif
-    DEBUG_WEB_PRINTLN("Debug receive handler enabled");
-    DEBUG_WEB_FLUSH();
+    DEBUG_PRINTF("Slave ready: ID=%u, Type=%u\n", SLAVE_ID, SLAVE_TYPE);
 
-    DEBUG_PRINTLN("Setup complete - sending heartbeats to master");
 #if SLAVE_TYPE == TYPE_BATTERY
-    batteryLed = factory.createRGBLED(D2, 1); // WS2812B on D2, single pixel
-    batteryLed->setBrightness(64);            // moderate brightness
-    batteryLed->setColor(255, 140, 0);        // default to idle/orange
+    batteryLed = factory.createRGBLED(D2, 1);
+    batteryLed->setBrightness(64);
+    batteryLed->setColor(255, 140, 0);
     batteryLed->show();
-#elif (SLAVE_TYPE == TYPE_NUCLEAR) || (SLAVE_TYPE == TYPE_COAL)
-    atomizer = factory.createAtomizer(D2); // Atomizer on D2
+#else
+    // All other powerplant types use atomizer
+    atomizer = factory.createAtomizer(D2);
 #endif
-    // factory.createPeriodic(1000, switchAtomizer); // Create periodic task to switch atomizer every second
 }
 
+// ---------- Loop ----------
 void loop()
 {
-    factory.update(); // Update all peripherals
-    
+    factory.update();
+
 #ifdef OTA_MODE_ENABLED
-    // Handle OTA updates only if OTA mode is enabled
     if (otaMode)
         handleOTA();
 #endif
+#ifdef DEBUG_MODE
+static long startTime = millis();
+if (millis() - startTime > 1000)
+{
+    DEBUG_PRINTF("Looping... (uptime: %ld seconds) data_received: %s\n", (millis() / 1000), data_recieved ? "true" : "false");
+    DEBUG_WEB_PRINTF("Looping... (uptime: %ld seconds) data_received: %s\n", (millis() / 1000), data_recieved ? "true" : "false");
+    startTime = millis();
 
-    // Update slave (handles incoming messages and heartbeats)
+
+}
+#endif
+
     slave.update();
-
 }
