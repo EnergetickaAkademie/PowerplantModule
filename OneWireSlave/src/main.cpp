@@ -95,12 +95,31 @@ static const uint8_t BAT_IDLE = 0x03;
 static const uint8_t BAT_CHARGING = 0x04;
 static const uint8_t BAT_DISCHARGE = 0x05;
 
-// Gas powerplant specific commands (5 levels)
-static const uint8_t GAS_LEVEL_1 = 0x06; // Green - Low production
-static const uint8_t GAS_LEVEL_2 = 0x07; // Yellow-Green - Low-Medium production  
-static const uint8_t GAS_LEVEL_3 = 0x08; // Blue - Medium production
-static const uint8_t GAS_LEVEL_4 = 0x09; // Orange - Medium-High production
-static const uint8_t GAS_LEVEL_5 = 0x0A; // Red - High production
+// Gas powerplant specific commands (expanded to 10 levels)
+// We reuse the 4-bit command space (0x0 - 0xF). Codes are shared across types, so
+// overlapping numeric values with other powerplants is acceptable.
+// Gradient (low -> high production) per user spec:
+// 1: (255, 0, 0)
+// 2: (227, 28, 36)
+// 3: (198, 57, 71)
+// 4: (170, 85,107)
+// 5: (142,113,142)
+// 6: (113,142,142)
+// 7: ( 85,170,107)
+// 8: ( 57,198, 71)
+// 9: ( 28,227, 36)
+//10: (  0,255,  0)
+// Level numbering kept sequential for clarity.
+static const uint8_t GAS_LEVEL_1  = 0x06; // 10%  Red
+static const uint8_t GAS_LEVEL_2  = 0x07; // 20%  Purple
+static const uint8_t GAS_LEVEL_3  = 0x08; // 30%  Blue
+static const uint8_t GAS_LEVEL_4  = 0x09; // 40%  Light Blue
+static const uint8_t GAS_LEVEL_5  = 0x0A; // 50%  Cyan
+static const uint8_t GAS_LEVEL_6  = 0x0B; // 60%  Teal
+static const uint8_t GAS_LEVEL_7  = 0x0C; // 70%  Green
+static const uint8_t GAS_LEVEL_8  = 0x0D; // 80%  Lime
+static const uint8_t GAS_LEVEL_9  = 0x0E; // 90%  Yellow-Green
+static const uint8_t GAS_LEVEL_10 = 0x0F; // 100% Yellow (peak)
 
 // Hydro Storage specific commands (5 levels)
 static const uint8_t HYDRO_STORAGE_LEVEL_1 = 0x0B; // Green - 100% (Discharging)
@@ -207,48 +226,24 @@ static void handleGas(uint8_t cmd4, uint8_t senderId)
 {
     data_recieved = true;
     DEBUG_PRINTF("[GAS] cmd=0x%X from master %u\n", cmd4, senderId);
-    if (!gasLed)
-    {
+    if (!gasLed) {
         DEBUG_PRINTLN("[GAS] LED not initialized");
         return;
     }
 
-    switch (cmd4)
-    {
-    case GAS_LEVEL_1: // Green - Low production
-        gasLed->setColor(0, 255, 0);
-        gasLed->setBrightness(64);
-        DEBUG_PRINTLN("Gas: Level 1 -> GREEN (Low production)");
-        break;
-    case GAS_LEVEL_2: // Yellow-Green - Low-Medium production
-        gasLed->setColor(128, 255, 0);
-        gasLed->setBrightness(96);
-        DEBUG_PRINTLN("Gas: Level 2 -> YELLOW-GREEN (Low-Medium production)");
-        break;
-    case GAS_LEVEL_3: // Blue - Medium production
-        gasLed->setColor(0, 128, 255);
-        gasLed->setBrightness(128);
-        DEBUG_PRINTLN("Gas: Level 3 -> BLUE (Medium production)");
-        break;
-    case GAS_LEVEL_4: // Orange - Medium-High production
-        gasLed->setColor(255, 165, 0);
-        gasLed->setBrightness(192);
-        DEBUG_PRINTLN("Gas: Level 4 -> ORANGE (Medium-High production)");
-        break;
-    case GAS_LEVEL_5: // Red - High production
-        gasLed->setColor(255, 0, 0);
-        gasLed->setBrightness(255);
-        DEBUG_PRINTLN("Gas: Level 5 -> RED (High production)");
-        break;
-    case CMD_OFF: // Turn off
-        gasLed->setColor(0, 0, 0);
-        gasLed->setBrightness(0);
-        DEBUG_PRINTLN("Gas: OFF");
-        break;
-    default:
-        DEBUG_PRINTF("Gas: Unknown cmd 0x%X (ignored)\n", cmd4);
-        return;
-    }
+    switch (cmd4) {
+    case GAS_LEVEL_1:  gasLed->setColor(255, 0, 0);    gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 1 -> (255,0,0)"); break;
+    case GAS_LEVEL_2:  gasLed->setColor(227, 28, 36);  gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 2 -> (227,28,36)"); break;
+    case GAS_LEVEL_3:  gasLed->setColor(198, 57, 71);  gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 3 -> (198,57,71)"); break;
+    case GAS_LEVEL_4:  gasLed->setColor(170, 85,107);  gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 4 -> (170,85,107)"); break;
+    case GAS_LEVEL_5:  gasLed->setColor(142,113,142);  gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 5 -> (142,113,142)"); break;
+    case GAS_LEVEL_6:  gasLed->setColor(113,142,142);  gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 6 -> (113,142,142)"); break;
+    case GAS_LEVEL_7:  gasLed->setColor(85,170,107);   gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 7 -> (85,170,107)"); break;
+    case GAS_LEVEL_8:  gasLed->setColor(57,198,71);    gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 8 -> (57,198,71)"); break;
+    case GAS_LEVEL_9:  gasLed->setColor(28,227,36);    gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 9 -> (28,227,36)"); break;
+    case GAS_LEVEL_10: gasLed->setColor(0,255,0);      gasLed->setBrightness(255); DEBUG_PRINTLN("Gas: Level 10 -> (0,255,0) MAX"); break;
+    case CMD_OFF:      gasLed->setColor(0,0,0);        gasLed->setBrightness(0);   DEBUG_PRINTLN("Gas: OFF"); break;
+    default: DEBUG_PRINTF("Gas: Unknown cmd 0x%X (ignored)\n", cmd4); return; }
     gasLed->show();
 }
 
@@ -395,6 +390,11 @@ void setup()
     slave.setCommandHandler(GAS_LEVEL_3, handleGas);
     slave.setCommandHandler(GAS_LEVEL_4, handleGas);
     slave.setCommandHandler(GAS_LEVEL_5, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_6, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_7, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_8, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_9, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_10, handleGas);
     slave.setCommandHandler(CMD_OFF, handleGas);
 #elif SLAVE_TYPE == TYPE_HYDRO
     slave.setCommandHandler(CMD_ON, handleHydro);
@@ -433,10 +433,10 @@ void setup()
     DEBUG_PRINTLN("Solar panel initialized on A0, LED on D2");
 #elif SLAVE_TYPE == TYPE_GAS
     gasLed = factory.createRGBLED(D2, 1);
-    gasLed->setBrightness(64);
-    gasLed->setColor(0, 255, 0); // Start with green (Level 1)
+    gasLed->setBrightness(255);
+    gasLed->setColor(255, 0, 0); // Start at Level 1 color
     gasLed->show();
-    DEBUG_PRINTLN("Gas powerplant LED initialized on D2");
+    DEBUG_PRINTLN("Gas powerplant LED initialized on D2 (10-level mode)");
 #elif SLAVE_TYPE == TYPE_HYDRO
     hydroMotor = factory.createMotorSinglePin(D5, 1000); // Motor on D5, 1kHz PWM
     hydroMotor->stop(); // Start with motor off

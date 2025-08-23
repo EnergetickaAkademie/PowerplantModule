@@ -37,13 +37,20 @@ A comprehensive powerplant module system using StarWire protocol for robust comm
 
 ### 4. **Gas (TYPE_GAS = 4)**
 - **Hardware**: RGB LED on D2
-- **Behavior**: 5-level production control with color and brightness indication
+- **Behavior**: 10-level production control (expanded) with color & brightness gradient
+- **Encoder Mapping**: <5% OFF, then 10% bands map to Levels 1..10
+- **Color Gradient (Low→High)**: Red → Purple → Blue → Light Blue → Cyan → Teal → Green → Lime → Yellow‑Green → Yellow
 - **Commands**:
-  - `0x06` (GAS_LEVEL_1) - **Level 1**: Green, Low production (Brightness: 64)
-  - `0x07` (GAS_LEVEL_2) - **Level 2**: Yellow-Green, Low-Medium production (Brightness: 96)
-  - `0x08` (GAS_LEVEL_3) - **Level 3**: Blue, Medium production (Brightness: 128)
-  - `0x09` (GAS_LEVEL_4) - **Level 4**: Orange, Medium-High production (Brightness: 192)
-  - `0x0A` (GAS_LEVEL_5) - **Level 5**: Red, High production (Brightness: 255)
+  - `0x06` (GAS_LEVEL_1)  - **Level 1 (≈10%)**: Red (Very Low)
+  - `0x07` (GAS_LEVEL_2)  - **Level 2 (≈20%)**: Purple (Low)
+  - `0x08` (GAS_LEVEL_3)  - **Level 3 (≈30%)**: Blue (Low-Mid)
+  - `0x09` (GAS_LEVEL_4)  - **Level 4 (≈40%)**: Light Blue (Mid)
+  - `0x0A` (GAS_LEVEL_5)  - **Level 5 (≈50%)**: Cyan (Mid)
+  - `0x0B` (GAS_LEVEL_6)  - **Level 6 (≈60%)**: Teal (Mid-High)
+  - `0x0C` (GAS_LEVEL_7)  - **Level 7 (≈70%)**: Green (High)
+  - `0x0D` (GAS_LEVEL_8)  - **Level 8 (≈80%)**: Lime (High)
+  - `0x0E` (GAS_LEVEL_9)  - **Level 9 (≈90%)**: Yellow-Green (Very High)
+  - `0x0F` (GAS_LEVEL_10) - **Level 10 (≈100%)**: Yellow (Peak)
   - `0x02` (CMD_OFF) - Turn OFF
 
 ### 5. **Hydro (TYPE_HYDRO = 5)**
@@ -117,11 +124,16 @@ pio device monitor -e slave_1
 | BAT_IDLE | 0x03 | Battery, Photovoltaic | Idle/Default state |
 | BAT_CHARGING | 0x04 | Battery | Charging state |
 | BAT_DISCHARGE | 0x05 | Battery | Discharging state |
-| GAS_LEVEL_1 | 0x06 | Gas | Level 1 - Green |
-| GAS_LEVEL_2 | 0x07 | Gas | Level 2 - Yellow-Green |
-| GAS_LEVEL_3 | 0x08 | Gas | Level 3 - Blue |
-| GAS_LEVEL_4 | 0x09 | Gas | Level 4 - Orange |
-| GAS_LEVEL_5 | 0x0A | Gas | Level 5 - Red |
+| GAS_LEVEL_1 | 0x06 | Gas | Level 1 - Red (Very Low) |
+| GAS_LEVEL_2 | 0x07 | Gas | Level 2 - Purple (Low) |
+| GAS_LEVEL_3 | 0x08 | Gas | Level 3 - Blue (Low-Mid) |
+| GAS_LEVEL_4 | 0x09 | Gas | Level 4 - Light Blue (Mid) |
+| GAS_LEVEL_5 | 0x0A | Gas | Level 5 - Cyan (Mid) |
+| GAS_LEVEL_6 | 0x0B | Gas | Level 6 - Teal (Mid-High) |
+| GAS_LEVEL_7 | 0x0C | Gas | Level 7 - Green (High) |
+| GAS_LEVEL_8 | 0x0D | Gas | Level 8 - Lime (High) |
+| GAS_LEVEL_9 | 0x0E | Gas | Level 9 - Yellow-Green (Very High) |
+| GAS_LEVEL_10 | 0x0F | Gas | Level 10 - Yellow (Peak) |
 | HYDRO_STORAGE_LEVEL_1 | 0x0B | Hydro Storage | 100% Full - Green |
 | HYDRO_STORAGE_LEVEL_2 | 0x0C | Hydro Storage | 75% - Light Green |
 | HYDRO_STORAGE_LEVEL_3 | 0x0D | Hydro Storage | 50% - Orange |
