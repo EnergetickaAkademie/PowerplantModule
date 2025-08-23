@@ -1,8 +1,11 @@
 /*
  * StarWire Slave (ESP8266)
  * Host sends only [type, cmd4], no payload.
- * Examples:
- *   0x01 = ON, 0x02 = OFF (for NUCLEAR/COAL atomizer)
+ * Examples:// Photovoltaic specific variables
+#define SOLAR_PIN A0
+unsigned long lastSolarUpdate = 0;
+const unsigned long SOLAR_UPDATE_INTERVAL = 100; // Update every 100ms
+uint8_t solarMode = 0; // 0=idle (green), 1=half power (orange), 2=night (red)  0x01 = ON, 0x02 = OFF (for NUCLEAR/COAL atomizer)
  *   0x00 = Idle, 0x01 = Charging, 0x02 = Discharging (for BATTERY LED)
  */
 
@@ -24,7 +27,7 @@ using namespace StarWire;
 #endif
 
 #ifndef SLAVE_ID
-#define SLAVE_ID 10
+#define SLAVE_ID 1000
 #endif
 #ifndef SLAVE_TYPE
 #define SLAVE_TYPE 7
@@ -57,6 +60,7 @@ PeripheralFactory factory;
 
 Atomizer *atomizer = nullptr; // for NUCLEAR/COAL
 RGBLED *batteryLed = nullptr; // for BATTERY
+RGBLED *solarLed = nullptr; // for PHOTOVOLTAIC
 
 #ifdef OTA_MODE_ENABLED
 #include <ota.h>
@@ -87,6 +91,12 @@ static const uint8_t BAT_IDLE = 0x03;
 static const uint8_t BAT_CHARGING = 0x04;
 static const uint8_t BAT_DISCHARGE = 0x05;
 bool data_recieved = false;
+
+// Photovoltaic specific variables
+#define SOLAR_PIN A0
+unsigned long lastSolarUpdate = 0;
+const unsigned long SOLAR_UPDATE_INTERVAL = 50; // Update every 100ms
+uint8_t solarMode = 0; // 0=default green, 1=high production, 2=low production
 
 // ---------- Handlers ----------
 static void handleMisty(uint8_t cmd4, uint8_t senderId)
@@ -144,6 +154,36 @@ static void handleBattery(uint8_t cmd4, uint8_t senderId)
     batteryLed->show();
 }
 
+static void handlePhotovoltaic(uint8_t cmd4, uint8_t senderId)
+{
+    data_recieved = true;
+    DEBUG_PRINTF("[SOLAR] cmd=0x%X from master %u\n", cmd4, senderId);
+    if (!solarLed)
+    {
+        DEBUG_PRINTLN("[SOLAR] LED not initialized");
+        return;
+    }
+
+    switch (cmd4)
+    {
+    case CMD_ON: // Half power mode (orange)
+        solarMode = 1;
+        DEBUG_PRINTLN("Solar: Half power mode (orange)");
+        break;
+    case CMD_OFF: // Night mode (red, no light reaction)
+        solarMode = 2;
+        DEBUG_PRINTLN("Solar: Night mode (red)");
+        break;
+    case BAT_IDLE: // Idle mode (green)
+        solarMode = 0;
+        DEBUG_PRINTLN("Solar: Idle mode (green)");
+        break;
+    default:
+        DEBUG_PRINTF("Solar: Unknown cmd 0x%X (ignored)\n", cmd4);
+        return;
+    }
+}
+
 // ---------- Setup ----------
 void setup()
 {
@@ -172,6 +212,10 @@ void setup()
     slave.setCommandHandler(BAT_IDLE, handleBattery);
     slave.setCommandHandler(BAT_CHARGING, handleBattery);
     slave.setCommandHandler(BAT_DISCHARGE, handleBattery);
+#elif SLAVE_TYPE == TYPE_PHOTOVOLTAIC
+    slave.setCommandHandler(CMD_ON, handlePhotovoltaic);
+    slave.setCommandHandler(CMD_OFF, handlePhotovoltaic);
+    slave.setCommandHandler(BAT_IDLE, handlePhotovoltaic);
 #else
     // All other powerplant types use the same ON/OFF commands
     slave.setCommandHandler(CMD_ON, handleMisty);
@@ -187,6 +231,13 @@ void setup()
     batteryLed->setBrightness(64);
     batteryLed->setColor(255, 140, 0);
     batteryLed->show();
+#elif SLAVE_TYPE == TYPE_PHOTOVOLTAIC
+    solarLed = factory.createRGBLED(D2, 1);
+    solarLed->setBrightness(32); // Start with low brightness
+    solarLed->setColor(0, 255, 0); // Default green
+    solarLed->show();
+    pinMode(SOLAR_PIN, INPUT);
+    DEBUG_PRINTLN("Solar panel initialized on A0, LED on D2");
 #else
     // All other powerplant types use atomizer
     atomizer = factory.createAtomizer(D2);
@@ -197,6 +248,62 @@ void setup()
 void loop()
 {
     factory.update();
+
+#if SLAVE_TYPE == TYPE_PHOTOVOLTAIC
+    // Update solar panel brightness based on A0 reading
+    if (millis() - lastSolarUpdate >= SOLAR_UPDATE_INTERVAL)
+    {
+        lastSolarUpdate = millis();
+        
+        int analogValue = analogRead(SOLAR_PIN);
+        float voltage = (analogValue / 1024.0) * 3.3; // Convert to voltage (0-3.3V)
+        
+        // Map analog value to brightness (minimum 16, maximum 255)
+        uint8_t brightness = map(analogValue, 0, 1024, 16, 255);
+        
+        uint8_t red = 0, green = 0, blue = 0;
+        
+        switch (solarMode)
+        {
+        case 0: // Idle mode (green) - shifts to orange when A0 is low
+            {
+                // Green (0,255,0) to Orange (255,165,0)
+                // Map analogValue: 1024 = pure green, 0 = orange
+                uint8_t lightLevel = map(analogValue, 0, 1024, 0, 255);
+                red = 255 - lightLevel; // More red when light is low
+                green = 255; // Always full green
+                blue = 0;
+            }
+            break;
+            
+        case 1: // Half power mode (orange) - shifts to red when A0 is low
+            {
+                // Orange (255,165,0) to Red (255,0,0)
+                // Map analogValue: 1024 = orange, 0 = red
+                uint8_t lightLevel = map(analogValue, 0, 1024, 0, 165);
+                red = 255; // Always full red
+                green = lightLevel; // Less green when light is low
+                blue = 0;
+            }
+            break;
+            
+        case 2: // Night mode (red) - no reaction to light
+            red = 255;
+            green = 0;
+            blue = 0;
+            // For night mode, use fixed low brightness regardless of A0
+            brightness = 32;
+            break;
+        }
+        
+        solarLed->setColor(red, green, blue);
+        solarLed->setBrightness(brightness);
+        solarLed->show();
+        
+        DEBUG_PRINTF("[SOLAR] A0=%d, V=%.2fV, Bright=%d, Mode=%d, RGB=(%d,%d,%d)\n", 
+                    analogValue, voltage, brightness, solarMode, red, green, blue);
+    }
+#endif
 
 #ifdef OTA_MODE_ENABLED
     if (otaMode)
