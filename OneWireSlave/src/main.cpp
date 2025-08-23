@@ -61,6 +61,10 @@ PeripheralFactory factory;
 Atomizer *atomizer = nullptr; // for NUCLEAR/COAL
 RGBLED *batteryLed = nullptr; // for BATTERY
 RGBLED *solarLed = nullptr; // for PHOTOVOLTAIC
+RGBLED *gasLed = nullptr; // for GAS
+MotorSinglePin *hydroMotor = nullptr; // for HYDRO
+RGBLED *hydroStorageLed = nullptr; // for HYDRO_STORAGE
+MotorSinglePin *windMotor = nullptr; // for WIND
 
 #ifdef OTA_MODE_ENABLED
 #include <ota.h>
@@ -90,6 +94,21 @@ static const uint8_t CMD_OFF = 0x02;
 static const uint8_t BAT_IDLE = 0x03;
 static const uint8_t BAT_CHARGING = 0x04;
 static const uint8_t BAT_DISCHARGE = 0x05;
+
+// Gas powerplant specific commands (5 levels)
+static const uint8_t GAS_LEVEL_1 = 0x06; // Green - Low production
+static const uint8_t GAS_LEVEL_2 = 0x07; // Yellow-Green - Low-Medium production  
+static const uint8_t GAS_LEVEL_3 = 0x08; // Blue - Medium production
+static const uint8_t GAS_LEVEL_4 = 0x09; // Orange - Medium-High production
+static const uint8_t GAS_LEVEL_5 = 0x0A; // Red - High production
+
+// Hydro Storage specific commands (5 levels)
+static const uint8_t HYDRO_STORAGE_LEVEL_1 = 0x0B; // Green - 100% (Discharging)
+static const uint8_t HYDRO_STORAGE_LEVEL_2 = 0x0C; // Light Green - 75%
+static const uint8_t HYDRO_STORAGE_LEVEL_3 = 0x0D; // Orange - 50% (Idle)
+static const uint8_t HYDRO_STORAGE_LEVEL_4 = 0x0E; // Light Red - 25%
+static const uint8_t HYDRO_STORAGE_LEVEL_5 = 0x0F; // Red - 0% (Charging)
+
 bool data_recieved = false;
 
 // Photovoltaic specific variables
@@ -184,6 +203,160 @@ static void handlePhotovoltaic(uint8_t cmd4, uint8_t senderId)
     }
 }
 
+static void handleGas(uint8_t cmd4, uint8_t senderId)
+{
+    data_recieved = true;
+    DEBUG_PRINTF("[GAS] cmd=0x%X from master %u\n", cmd4, senderId);
+    if (!gasLed)
+    {
+        DEBUG_PRINTLN("[GAS] LED not initialized");
+        return;
+    }
+
+    switch (cmd4)
+    {
+    case GAS_LEVEL_1: // Green - Low production
+        gasLed->setColor(0, 255, 0);
+        gasLed->setBrightness(64);
+        DEBUG_PRINTLN("Gas: Level 1 -> GREEN (Low production)");
+        break;
+    case GAS_LEVEL_2: // Yellow-Green - Low-Medium production
+        gasLed->setColor(128, 255, 0);
+        gasLed->setBrightness(96);
+        DEBUG_PRINTLN("Gas: Level 2 -> YELLOW-GREEN (Low-Medium production)");
+        break;
+    case GAS_LEVEL_3: // Blue - Medium production
+        gasLed->setColor(0, 128, 255);
+        gasLed->setBrightness(128);
+        DEBUG_PRINTLN("Gas: Level 3 -> BLUE (Medium production)");
+        break;
+    case GAS_LEVEL_4: // Orange - Medium-High production
+        gasLed->setColor(255, 165, 0);
+        gasLed->setBrightness(192);
+        DEBUG_PRINTLN("Gas: Level 4 -> ORANGE (Medium-High production)");
+        break;
+    case GAS_LEVEL_5: // Red - High production
+        gasLed->setColor(255, 0, 0);
+        gasLed->setBrightness(255);
+        DEBUG_PRINTLN("Gas: Level 5 -> RED (High production)");
+        break;
+    case CMD_OFF: // Turn off
+        gasLed->setColor(0, 0, 0);
+        gasLed->setBrightness(0);
+        DEBUG_PRINTLN("Gas: OFF");
+        break;
+    default:
+        DEBUG_PRINTF("Gas: Unknown cmd 0x%X (ignored)\n", cmd4);
+        return;
+    }
+    gasLed->show();
+}
+
+static void handleHydro(uint8_t cmd4, uint8_t senderId)
+{
+    DEBUG_PRINTF("[HYDRO] cmd=0x%X from master %u\n", cmd4, senderId);
+    data_recieved = true;
+    if (!hydroMotor)
+        return;
+
+    bool wantOn = (cmd4 == CMD_ON);
+    bool wantOff = (cmd4 == CMD_OFF);
+
+    if (!wantOn && !wantOff)
+    {
+        DEBUG_PRINTLN("[HYDRO] Unknown cmd, ignored.");
+        return;
+    }
+
+    if (wantOn)
+    {
+        hydroMotor->forward(1023); // 100% speed
+        DEBUG_PRINTLN("[HYDRO] Motor ON -> 100%");
+    }
+    else
+    {
+        hydroMotor->stop();
+        DEBUG_PRINTLN("[HYDRO] Motor OFF");
+    }
+}
+
+static void handleHydroStorage(uint8_t cmd4, uint8_t senderId)
+{
+    data_recieved = true;
+    DEBUG_PRINTF("[HYDRO_STORAGE] cmd=0x%X from master %u\n", cmd4, senderId);
+    if (!hydroStorageLed)
+    {
+        DEBUG_PRINTLN("[HYDRO_STORAGE] LED not initialized");
+        return;
+    }
+
+    switch (cmd4)
+    {
+    case HYDRO_STORAGE_LEVEL_1: // Green - 100% (Full/Discharging)
+        hydroStorageLed->setColor(0, 255, 0);
+        hydroStorageLed->setBrightness(255);
+        DEBUG_PRINTLN("Hydro Storage: Level 1 -> GREEN (100% - Full/Discharging)");
+        break;
+    case HYDRO_STORAGE_LEVEL_2: // Light Green - 75%
+        hydroStorageLed->setColor(128, 255, 128);
+        hydroStorageLed->setBrightness(192);
+        DEBUG_PRINTLN("Hydro Storage: Level 2 -> LIGHT GREEN (75%)");
+        break;
+    case HYDRO_STORAGE_LEVEL_3: // Orange - 50% (Idle)
+        hydroStorageLed->setColor(255, 140, 0);
+        hydroStorageLed->setBrightness(128);
+        DEBUG_PRINTLN("Hydro Storage: Level 3 -> ORANGE (50% - Idle)");
+        break;
+    case HYDRO_STORAGE_LEVEL_4: // Light Red - 25%
+        hydroStorageLed->setColor(255, 128, 128);
+        hydroStorageLed->setBrightness(96);
+        DEBUG_PRINTLN("Hydro Storage: Level 4 -> LIGHT RED (25%)");
+        break;
+    case HYDRO_STORAGE_LEVEL_5: // Red - 0% (Empty/Charging)
+        hydroStorageLed->setColor(255, 0, 0);
+        hydroStorageLed->setBrightness(64);
+        DEBUG_PRINTLN("Hydro Storage: Level 5 -> RED (0% - Empty/Charging)");
+        break;
+    case CMD_OFF: // Turn off
+        hydroStorageLed->setColor(0, 0, 0);
+        hydroStorageLed->setBrightness(0);
+        DEBUG_PRINTLN("Hydro Storage: OFF");
+        break;
+    default:
+        DEBUG_PRINTF("Hydro Storage: Unknown cmd 0x%X (ignored)\n", cmd4);
+        return;
+    }
+    hydroStorageLed->show();
+}
+
+static void handleWind(uint8_t cmd4, uint8_t senderId)
+{
+    DEBUG_PRINTF("[WIND] cmd=0x%X from master %u\n", cmd4, senderId);
+    data_recieved = true;
+    if (!windMotor)
+        return;
+
+    bool wantOn = (cmd4 == CMD_ON);
+    bool wantOff = (cmd4 == CMD_OFF);
+
+    if (!wantOn && !wantOff)
+    {
+        DEBUG_PRINTLN("[WIND] Unknown cmd, ignored.");
+        return;
+    }
+
+    if (wantOn)
+    {
+        windMotor->forward(50); // 50 power level as specified
+        DEBUG_PRINTLN("[WIND] Motor ON -> 50 power level");
+    }
+    else
+    {
+        windMotor->stop();
+        DEBUG_PRINTLN("[WIND] Motor OFF");
+    }
+}
+
 // ---------- Setup ----------
 void setup()
 {
@@ -216,6 +389,26 @@ void setup()
     slave.setCommandHandler(CMD_ON, handlePhotovoltaic);
     slave.setCommandHandler(CMD_OFF, handlePhotovoltaic);
     slave.setCommandHandler(BAT_IDLE, handlePhotovoltaic);
+#elif SLAVE_TYPE == TYPE_GAS
+    slave.setCommandHandler(GAS_LEVEL_1, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_2, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_3, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_4, handleGas);
+    slave.setCommandHandler(GAS_LEVEL_5, handleGas);
+    slave.setCommandHandler(CMD_OFF, handleGas);
+#elif SLAVE_TYPE == TYPE_HYDRO
+    slave.setCommandHandler(CMD_ON, handleHydro);
+    slave.setCommandHandler(CMD_OFF, handleHydro);
+#elif SLAVE_TYPE == TYPE_HYDRO_STORAGE
+    slave.setCommandHandler(HYDRO_STORAGE_LEVEL_1, handleHydroStorage);
+    slave.setCommandHandler(HYDRO_STORAGE_LEVEL_2, handleHydroStorage);
+    slave.setCommandHandler(HYDRO_STORAGE_LEVEL_3, handleHydroStorage);
+    slave.setCommandHandler(HYDRO_STORAGE_LEVEL_4, handleHydroStorage);
+    slave.setCommandHandler(HYDRO_STORAGE_LEVEL_5, handleHydroStorage);
+    slave.setCommandHandler(CMD_OFF, handleHydroStorage);
+#elif SLAVE_TYPE == TYPE_WIND
+    slave.setCommandHandler(CMD_ON, handleWind);
+    slave.setCommandHandler(CMD_OFF, handleWind);
 #else
     // All other powerplant types use the same ON/OFF commands
     slave.setCommandHandler(CMD_ON, handleMisty);
@@ -238,6 +431,28 @@ void setup()
     solarLed->show();
     pinMode(SOLAR_PIN, INPUT);
     DEBUG_PRINTLN("Solar panel initialized on A0, LED on D2");
+#elif SLAVE_TYPE == TYPE_GAS
+    gasLed = factory.createRGBLED(D2, 1);
+    gasLed->setBrightness(64);
+    gasLed->setColor(0, 255, 0); // Start with green (Level 1)
+    gasLed->show();
+    DEBUG_PRINTLN("Gas powerplant LED initialized on D2");
+#elif SLAVE_TYPE == TYPE_HYDRO
+    hydroMotor = new MotorSinglePin(D5, 1000); // Motor on D5, 1kHz PWM
+    hydroMotor->stop(); // Start with motor off
+    DEBUG_PRINTLN("Hydro motor initialized on D5");
+#elif SLAVE_TYPE == TYPE_HYDRO_STORAGE
+    hydroStorageLed = factory.createRGBLED(D2, 1);
+    hydroStorageLed->setBrightness(128);
+    hydroStorageLed->setColor(255, 140, 0); // Start with orange (50% - Idle)
+    hydroStorageLed->show();
+    DEBUG_PRINTLN("Hydro Storage LED initialized on D2");
+#elif SLAVE_TYPE == TYPE_WIND
+    windMotor = new MotorSinglePin(D2, 15); // Motor on D2, 15Hz PWM as specified
+    windMotor->enableSpeedup(true);
+    windMotor->setSpeedupConfig(2.5f, 1000); // 2.5x multiplier, 1000ms duration
+    windMotor->stop(); // Start with motor off
+    DEBUG_PRINTLN("Wind motor initialized on D2 with speedup enabled");
 #else
     // All other powerplant types use atomizer
     atomizer = factory.createAtomizer(D2);
