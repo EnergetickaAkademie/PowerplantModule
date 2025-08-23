@@ -438,7 +438,7 @@ void setup()
     gasLed->show();
     DEBUG_PRINTLN("Gas powerplant LED initialized on D2");
 #elif SLAVE_TYPE == TYPE_HYDRO
-    hydroMotor = new MotorSinglePin(D5, 1000); // Motor on D5, 1kHz PWM
+    hydroMotor = factory.createMotorSinglePin(D5, 1000); // Motor on D5, 1kHz PWM
     hydroMotor->stop(); // Start with motor off
     DEBUG_PRINTLN("Hydro motor initialized on D5");
 #elif SLAVE_TYPE == TYPE_HYDRO_STORAGE
@@ -448,11 +448,12 @@ void setup()
     hydroStorageLed->show();
     DEBUG_PRINTLN("Hydro Storage LED initialized on D2");
 #elif SLAVE_TYPE == TYPE_WIND
-    windMotor = new MotorSinglePin(D2, 15); // Motor on D2, 15Hz PWM as specified
+    windMotor = factory.createMotorSinglePin(D5, 15); // Motor on D5, 15Hz PWM as specified
     windMotor->enableSpeedup(true);
     windMotor->setSpeedupConfig(2.5f, 1000); // 2.5x multiplier, 1000ms duration
     windMotor->stop(); // Start with motor off
-    DEBUG_PRINTLN("Wind motor initialized on D2 with speedup enabled");
+
+    DEBUG_PRINTLN("Wind motor initialized on D5 with speedup enabled");
 #else
     // All other powerplant types use atomizer
     atomizer = factory.createAtomizer(D2);
