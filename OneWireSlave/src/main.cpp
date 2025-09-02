@@ -64,7 +64,7 @@ RGBLED *solarLed = nullptr; // for PHOTOVOLTAIC
 RGBLED *gasLed = nullptr; // for GAS
 MotorSinglePin *hydroMotor = nullptr; // for HYDRO
 RGBLED *hydroStorageLed = nullptr; // for HYDRO_STORAGE
-MotorSinglePin *windMotor = nullptr; // for WIND
+Motor *windMotor = nullptr; // for WIND
 
 #ifdef OTA_MODE_ENABLED
 #include <ota.h>
@@ -342,8 +342,8 @@ static void handleWind(uint8_t cmd4, uint8_t senderId)
 
     if (wantOn)
     {
-        windMotor->forward(50); // 50 power level as specified
-        DEBUG_PRINTLN("[WIND] Motor ON -> 50 power level");
+        windMotor->forward(150); // 70 power level as specified
+        DEBUG_PRINTLN("[WIND] Motor ON -> 70 power level");
     }
     else
     {
@@ -448,9 +448,10 @@ void setup()
     hydroStorageLed->show();
     DEBUG_PRINTLN("Hydro Storage LED initialized on D2");
 #elif SLAVE_TYPE == TYPE_WIND
-    windMotor = factory.createMotorSinglePin(D5, 15); // Motor on D5, 15Hz PWM as specified
-    windMotor->enableSpeedup(true);
-    windMotor->setSpeedupConfig(2.5f, 1000); // 2.5x multiplier, 1000ms duration
+    windMotor = factory.createMotor(D5, D6, 20000); // Motor on D5, 20kHz PWM as specified
+   // windMotor->enableSpeedup(true);
+   // windMotor->setSpeedupConfig(2.5f, 1000); // 2.5x multiplier, 1000ms duration
+
     windMotor->stop(); // Start with motor off
 
     DEBUG_PRINTLN("Wind motor initialized on D5 with speedup enabled");
@@ -532,10 +533,17 @@ if (millis() - startTime > 1000)
     DEBUG_PRINTF("Looping... (uptime: %ld seconds) data_received: %s\n", (millis() / 1000), data_recieved ? "true" : "false");
     DEBUG_WEB_PRINTF("Looping... (uptime: %ld seconds) data_received: %s\n", (millis() / 1000), data_recieved ? "true" : "false");
     startTime = millis();
+    if(windMotor)
+    {
+        // is speedup active
+        DEBUG_PRINTF("Wind motor speedup active: %s\n", windMotor->isSpeedupActive() ? "true" : "false");
+    }
 
 
 }
 #endif
+    //windMotor->forward(150);
 
+     
     slave.update();
 }
