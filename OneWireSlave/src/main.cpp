@@ -62,7 +62,7 @@ Atomizer *atomizer = nullptr; // for NUCLEAR/COAL
 RGBLED *batteryLed = nullptr; // for BATTERY
 RGBLED *solarLed = nullptr; // for PHOTOVOLTAIC
 RGBLED *gasLed = nullptr; // for GAS
-MotorSinglePin *hydroMotor = nullptr; // for HYDRO
+Motor *hydroMotor = nullptr; // for HYDRO
 RGBLED *hydroStorageLed = nullptr; // for HYDRO_STORAGE
 Motor *windMotor = nullptr; // for WIND
 
@@ -438,7 +438,7 @@ void setup()
     gasLed->show();
     DEBUG_PRINTLN("Gas powerplant LED initialized on D2 (10-level mode)");
 #elif SLAVE_TYPE == TYPE_HYDRO
-    hydroMotor = factory.createMotorSinglePin(D5, 1000); // Motor on D5, 1kHz PWM
+    hydroMotor = factory.createMotor(D5, D6, 1000); // Motor on D5, 1kHz PWM
     hydroMotor->stop(); // Start with motor off
     DEBUG_PRINTLN("Hydro motor initialized on D5");
 #elif SLAVE_TYPE == TYPE_HYDRO_STORAGE
@@ -542,7 +542,6 @@ if (millis() - startTime > 1000)
 
 }
 #endif
-    //windMotor->forward(150);
 
      
     slave.update();
