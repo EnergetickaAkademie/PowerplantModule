@@ -154,6 +154,8 @@ static void handleMisty(uint8_t cmd4, uint8_t senderId)
     }
 
     bool target = wantOn;
+
+    DEBUG_PRINTF("[MISTY] Target state: %s\n", target ? "Active" : "Inactive");
     if (target != atomizer->getTargetState())
     {
         atomizer->toggle();
